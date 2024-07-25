@@ -47,7 +47,7 @@ func GetTimeFormat(timeStr string) int {
 			return -1
 		}
 
-		if matched == true {
+		if matched {
 			return timeFormatId
 		}
 	}
@@ -61,11 +61,11 @@ func RelToTime(timeStr string, ftId int) (time.Time, error) {
 	gm := re.FindStringSubmatch(timeStr)
 
 	if len(gm) < 4 {
-		return time.Now(), errors.New("No match")
+		return time.Now(), errors.New("no match")
 	}
 
-	var hours int = 0
-	var minutes int = 0
+	var hours = 0
+	var minutes = 0
 
 	if ftId == TFRelHourFraction {
 		f, _ := strconv.ParseFloat(gm[2]+"."+gm[3], 32)
@@ -145,7 +145,7 @@ func GetGitLog(repo string, since time.Time, until time.Time) (string, string, e
 	if err != nil {
 		return "", "", err
 	}
-	gitUserStr, gitUserErrStr := string(stdout.Bytes()), string(stderr.Bytes())
+	gitUserStr, gitUserErrStr := stdout.String(), stderr.String()
 	if gitUserStr == "" && gitUserErrStr != "" {
 		return gitUserStr, gitUserErrStr, errors.New(gitUserErrStr)
 	}
@@ -161,6 +161,6 @@ func GetGitLog(repo string, since time.Time, until time.Time) (string, string, e
 		return "", "", err
 	}
 
-	stdoutStr, stderrStr := string(stdout.Bytes()), string(stderr.Bytes())
+	stdoutStr, stderrStr := stdout.String(), stderr.String()
 	return stdoutStr, stderrStr, nil
 }

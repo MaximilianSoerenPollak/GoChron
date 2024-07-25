@@ -2,9 +2,10 @@ package z
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var database *Database
@@ -54,7 +55,7 @@ func init() {
 }
 
 func initConfig() {
-	if noColors == true {
+	if noColors {
 		color.Disable()
 	}
 }

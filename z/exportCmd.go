@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func exportZeitJson(user string, entries []Entry) (string, error) {
+func exportZeitJson(entries []Entry) (string, error) {
 	stringified, err := json.Marshal(entries)
 	if err != nil {
 		return "", err
@@ -19,7 +19,7 @@ func exportZeitJson(user string, entries []Entry) (string, error) {
 	return string(stringified), nil
 }
 
-func exportTymeJson(user string, entries []Entry) (string, error) {
+func exportTymeJson(entries []Entry) (string, error) {
 	tyme := Tyme{}
 	err := tyme.FromEntries(entries)
 	if err != nil {
@@ -87,16 +87,16 @@ var exportCmd = &cobra.Command{
 			filteredEntries = addedInformationEntries
 		}
 
-		var output string = ""
+		var output = ""
 		switch format {
 		case "zeit":
-			output, err = exportZeitJson(user, filteredEntries)
+			output, err = exportZeitJson(filteredEntries)
 			if err != nil {
 				fmt.Printf("%s %+v\n", CharError, err)
 				os.Exit(1)
 			}
 		case "tyme":
-			output, err = exportTymeJson(user, filteredEntries)
+			output, err = exportTymeJson(filteredEntries)
 			if err != nil {
 				fmt.Printf("%s %+v\n", CharError, err)
 				os.Exit(1)
@@ -107,7 +107,6 @@ var exportCmd = &cobra.Command{
 		}
 
 		fmt.Printf("%s\n", output)
-		return
 	},
 }
 

@@ -18,7 +18,7 @@ type Database struct {
 
 func InitDatabase() (*Database, error) {
 	dbfile, ok := os.LookupEnv("ZEIT_DB")
-	if ok == false || dbfile == "" {
+	if !ok || dbfile == "" {
 		return nil, errors.New("please `export ZEIT_DB` to the location the zeit database should be stored at")
 	}
 
@@ -37,7 +37,7 @@ func InitDatabase() (*Database, error) {
 func (database *Database) NewID() string {
 	id, err := uuid.NewRandom()
 	if err != nil {
-		log.Fatalln("could not generate UUID: %+v", err)
+		log.Fatalf("could not generate UUID: %+v", err)
 	}
 	return id.String()
 }
@@ -51,7 +51,7 @@ func (database *Database) AddEntry(user string, entry Entry, setRunning bool) (s
 	}
 
 	dberr := database.DB.Update(func(tx *buntdb.Tx) error {
-		if setRunning == true {
+		if setRunning {
 			_, _, seterr := tx.Set(user+":status:running", id, nil)
 			if seterr != nil {
 				return seterr

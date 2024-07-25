@@ -2,10 +2,11 @@ package z
 
 import (
 	"fmt"
-	"github.com/jinzhu/now"
-	"github.com/shopspring/decimal"
 	"strings"
 	"time"
+
+	"github.com/jinzhu/now"
+	"github.com/shopspring/decimal"
 	// "github.com/gookit/color"
 )
 
@@ -66,7 +67,7 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 		 * Apparently the activity end is on a new day.
 		 * This means we have to split the activity across two days.
 		 */
-		if endOfBeginDay.Before(entryFinish) == true {
+		if endOfBeginDay.Before(entryFinish) {
 			startOfFinishDay := now.With(entryFinish).BeginningOfDay()
 
 			sameDayDuration := endOfBeginDay.Sub(entry.Begin)
@@ -139,7 +140,7 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 }
 
 func (calendar *Calendar) GetOutputForWeekCalendar(date time.Time, month int, week int) string {
-	var output string = ""
+	var output = ""
 	var bars [][]string
 	var totalHours = decimal.NewFromInt(0)
 
@@ -176,11 +177,11 @@ func (calendar *Calendar) GetOutputForWeekCalendar(date time.Time, month int, we
 }
 
 func (calendar *Calendar) GetOutputForDistribution() string {
-	var output string = ""
+	var output = ""
 
 	// fmt.Printf("%s\n", calendar.TotalHours.String())
 
-	var bar string = ""
+	var bar = ""
 	for _, stat := range calendar.Distribution {
 		divided := stat.Hours.Div(calendar.TotalHours)
 		percentage := divided.Mul(decimal.NewFromInt(100))

@@ -2,9 +2,10 @@ package z
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"os"
 	"time"
+
+	"github.com/spf13/cobra"
 )
 
 var finishCmd = &cobra.Command{
@@ -81,7 +82,7 @@ var finishCmd = &cobra.Command{
 			}
 		}
 
-		if runningEntry.IsFinishedAfterBegan() == false {
+		if !runningEntry.IsFinishedAfterBegan() {
 			fmt.Printf("%s %+v\n", CharError, "beginning time of tracking cannot be after finish time")
 			os.Exit(1)
 		}
@@ -92,8 +93,7 @@ var finishCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf(runningEntry.GetOutputForFinish())
-		return
+		fmt.Println(runningEntry.GetOutputForFinish())
 	},
 }
 

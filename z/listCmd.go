@@ -54,7 +54,7 @@ var listCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		if listOnlyProjectsAndTasks == true || listOnlyTasks == true {
+		if listOnlyProjectsAndTasks || listOnlyTasks {
 			var projectsAndTasks = make(map[string]map[string]bool)
 
 			for _, filteredEntry := range filteredEntries {
@@ -69,17 +69,17 @@ var listCmd = &cobra.Command{
 				projectsAndTasks[filteredEntry.Project] = taskMap
 			}
 
-			for project, _ := range projectsAndTasks {
-				if listOnlyProjectsAndTasks == true && listOnlyTasks == false {
+			for project := range projectsAndTasks {
+				if listOnlyProjectsAndTasks && !listOnlyTasks {
 					fmt.Printf("%s %s\n", CharMore, project)
 				}
 
-				for task, _ := range projectsAndTasks[project] {
-					if listOnlyProjectsAndTasks == true && listOnlyTasks == false {
+				for task := range projectsAndTasks[project] {
+					if listOnlyProjectsAndTasks && !listOnlyTasks {
 						fmt.Printf("%*s└── ", 1, " ")
 					}
 
-					if appendProjectIDToTask == true {
+					if appendProjectIDToTask {
 						fmt.Printf("%s [%s]\n", task, project)
 					} else {
 						fmt.Printf("%s\n", task)
@@ -96,10 +96,9 @@ var listCmd = &cobra.Command{
 			fmt.Printf("%s\n", entry.GetOutput(false))
 		}
 
-		if listTotalTime == true {
+		if listTotalTime {
 			fmt.Printf("\nTOTAL: %s H\n\n", fmtHours(totalHours))
 		}
-		return
 	},
 }
 

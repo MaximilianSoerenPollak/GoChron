@@ -88,8 +88,8 @@ func GetOutputBarForHours(hours decimal.Decimal, stats []Statistic) []string {
 }
 
 func OutputAppendRight(leftStr string, rightStr string, pad int) string {
-	var output string = ""
-	var rpos int = 0
+	var output = ""
+	var rpos = 0
 
 	left := []rune(leftStr)
 	leftLen := len(left)
@@ -99,7 +99,7 @@ func OutputAppendRight(leftStr string, rightStr string, pad int) string {
 	for lpos := 0; lpos < leftLen; lpos++ {
 		if left[lpos] == '\n' || lpos == (leftLen-1) {
 			output = fmt.Sprintf("%s%*s", output, pad, "")
-			for rpos = rpos; rpos < rightLen; rpos++ {
+			for ; rpos < rightLen; rpos++ {
 				output = fmt.Sprintf("%s%c", output, right[rpos])
 				if right[rpos] == '\n' {
 					rpos++

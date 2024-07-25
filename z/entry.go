@@ -19,7 +19,7 @@ type Entry struct {
 	Hours   string    `json:"hours,omitempty"`
 	Task    string    `json:"task,omitempty"`
 	Notes   string    `json:"notes,omitempty"`
-	User    string    `json:"user,omitempty"`
+	User    string    `json:"-"`
 
 	SHA1 string `json:"-"`
 }
@@ -50,7 +50,7 @@ func NewEntry(
 		return Entry{}, err
 	}
 
-	if id == "" && newEntry.IsFinishedAfterBegan() == false {
+	if id == "" && !newEntry.IsFinishedAfterBegan() {
 		return Entry{}, errors.New("beginning time of tracking cannot be after finish time")
 	}
 
@@ -109,19 +109,19 @@ func (entry *Entry) IsFinishedAfterBegan() bool {
 }
 
 func (entry *Entry) GetOutputForTrack(isRunning bool, wasRunning bool) string {
-	var outputPrefix string = ""
-	var outputSuffix string = ""
+	var outputSuffix = ""
+	var outputPrefix = ""
 
 	now := time.Now()
 	trackDiffNow := now.Sub(entry.Begin)
 	durationString := fmtDuration(trackDiffNow)
 
-	if isRunning == true && wasRunning == false {
+	if isRunning && !wasRunning {
 		outputPrefix = "began tracking"
-	} else if isRunning == true && wasRunning == true {
+	} else if isRunning && wasRunning {
 		outputPrefix = "tracking"
 		outputSuffix = fmt.Sprintf(" for %sh", color.FgLightWhite.Render(durationString))
-	} else if isRunning == false && wasRunning == false {
+	} else if !isRunning && !wasRunning {
 		outputPrefix = "tracked"
 	}
 
@@ -139,13 +139,13 @@ func (entry *Entry) GetOutputForTrack(isRunning bool, wasRunning bool) string {
 func (entry *Entry) GetDuration() decimal.Decimal {
 	duration := entry.Finish.Sub(entry.Begin)
 	if duration < 0 {
-		duration = time.Now().Sub(entry.Begin)
+		duration = time.Since(entry.Begin)
 	}
 	return decimal.NewFromFloat(duration.Hours())
 }
 
 func (entry *Entry) GetOutputForFinish() string {
-	var outputSuffix string = ""
+	var outputSuffix = ""
 
 	trackDiff := entry.Finish.Sub(entry.Begin)
 	taskDuration := fmtDuration(trackDiff)
@@ -164,9 +164,9 @@ func (entry *Entry) GetOutputForFinish() string {
 }
 
 func (entry *Entry) GetOutput(full bool) string {
-	var output string = ""
+	var output = ""
 	var entryFinish time.Time
-	var isRunning string = ""
+	var isRunning = ""
 
 	if entry.Finish.IsZero() {
 		entryFinish = time.Now()
@@ -177,7 +177,7 @@ func (entry *Entry) GetOutput(full bool) string {
 
 	trackDiff := entryFinish.Sub(entry.Begin)
 	taskDuration := fmtDuration(trackDiff)
-	if full == false {
+	if !full {
 
 		output = fmt.Sprintf("%s %s on %s from %s to %s (%sh) %s",
 			color.FgGray.Render(entry.ID),
@@ -216,11 +216,11 @@ func GetFilteredEntries(entries []Entry, project string, task string, since time
 			continue
 		}
 
-		if since.IsZero() == false && since.Before(entry.Begin) == false && since.Equal(entry.Begin) == false {
+		if !since.IsZero() && !since.Before(entry.Begin) && !since.Equal(entry.Begin) {
 			continue
 		}
 
-		if until.IsZero() == false && until.After(entry.Finish) == false && until.Equal(entry.Finish) == false {
+		if !until.IsZero() && !until.After(entry.Finish) && !until.Equal(entry.Finish) {
 			continue
 		}
 

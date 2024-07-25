@@ -1,3 +1,21 @@
+
+### Info 
+
+This is a fork of the 'zeit' repo which can be found [here](https://github.com/mrusme/zeit/)
+
+Much thanks to Mrusme for his work and for making it available to the public.   
+I have decided to fork it as I wanted to have some additions and be able to use this accorss different PC's.  
+Sadly my setup even with changes did not work with the requiered '.editorconfig'.   
+So I couldn't contribute upstream.  
+I will keep the Fork here to track my own additions if I make any more.
+
+
+
+**Please see the original README of the Project below.**
+
+---
+---
+
 Zeit
 ----
 

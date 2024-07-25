@@ -1,10 +1,10 @@
 package z
 
 import (
-  "fmt"
-  "github.com/spf13/cobra"
-  "github.com/gookit/color"
-  "os"
+	"fmt"
+	"github.com/gookit/color"
+	"github.com/spf13/cobra"
+	"os"
 )
 
 var database *Database
@@ -25,36 +25,36 @@ var force bool
 
 var noColors bool
 
-const(
-  CharTrack = " ▶"
-  CharFinish = " ■"
-  CharErase = " ◀"
-  CharError = " ▲"
-  CharInfo = " ●"
-  CharMore = " ◆"
+const (
+	CharTrack  = " ▶"
+	CharFinish = " ■"
+	CharErase  = " ◀"
+	CharError  = " ▲"
+	CharInfo   = " ●"
+	CharMore   = " ◆"
 )
 
 var rootCmd = &cobra.Command{
-  Use:   "zeit",
-  Short: "Command line Zeiterfassung",
-  Long:  `A command line time tracker.`,
+	Use:   "zeit",
+	Short: "Command line Zeiterfassung",
+	Long:  `A command line time tracker.`,
 }
 
 func Execute() {
-  if err := rootCmd.Execute(); err != nil {
-    fmt.Printf("%s %+v\n", CharError, err)
-    os.Exit(-1)
-  }
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Printf("%s %+v\n", CharError, err)
+		os.Exit(-1)
+	}
 }
 
 func init() {
-  cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig)
 
-  rootCmd.PersistentFlags().BoolVar(&noColors, "no-colors", false, "Do not use colors in output")
+	rootCmd.PersistentFlags().BoolVar(&noColors, "no-colors", false, "Do not use colors in output")
 }
 
 func initConfig() {
-  if noColors == true {
-    color.Disable()
-  }
+	if noColors == true {
+		color.Disable()
+	}
 }

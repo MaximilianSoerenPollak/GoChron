@@ -17,6 +17,8 @@ var task string
 var notes string
 var exportDate bool
 var exportHours bool
+var fileName string
+var exportAllFields bool
 
 var since string
 var until string

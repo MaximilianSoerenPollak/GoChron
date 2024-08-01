@@ -104,6 +104,14 @@ func (entry *Entry) SetFinishFromString(finish string) (time.Time, error) {
 	return finishTime, nil
 }
 
+
+func (entry *Entry) GetCSVHeaderAllData() []string { 
+	return []string{"date", "begin", "finish", "project", "task", "hours", "notes"}	
+}
+func (entry *Entry) GetCSVHeaderShortData() []string { 
+	return []string{"date", "project", "task", "hours"}	
+}
+
 func (entry *Entry) IsFinishedAfterBegan() bool {
 	return (entry.Finish.IsZero() || entry.Begin.Before(entry.Finish))
 }
@@ -142,6 +150,27 @@ func (entry *Entry) GetDuration() decimal.Decimal {
 		duration = time.Since(entry.Begin)
 	}
 	return decimal.NewFromFloat(duration.Hours())
+}
+
+func (entry *Entry) ConvertToCSVAllData() []string {
+	return []string{
+		entry.Date, 
+		entry.Begin.String(), 
+		entry.Finish.String(), 
+		entry.Project,
+		entry.Task,
+		entry.Hours,
+		entry.Notes,
+	}
+}
+
+func (entry *Entry) ConvertToCSVShortData() []string {
+	return []string{
+		entry.Date, 
+		entry.Project,
+		entry.Task,
+		entry.Hours,
+	}
 }
 
 func (entry *Entry) GetOutputForFinish() string {

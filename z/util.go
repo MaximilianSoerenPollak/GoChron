@@ -18,7 +18,7 @@ func fmtHours(hours decimal.Decimal) string {
 		return hours.StringFixed(2)
 	} else {
 		return fmt.Sprintf(
-			"%s:%02s",
+			"%s,%02s",
 			hours.Floor(), // hours
 			hours.Sub(hours.Floor()).
 				Mul(decimal.NewFromFloat(.6)).

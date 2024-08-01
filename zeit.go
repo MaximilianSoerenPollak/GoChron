@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/mrusme/zeit/z"
+	"github.com/MaximilianSoerenPollak/zeit/z"
 )
 
 func main() {

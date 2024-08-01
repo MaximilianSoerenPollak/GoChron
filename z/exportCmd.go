@@ -39,6 +39,7 @@ func exportCSV(entries []Entry) error {
 	}
 	defer f.Close()
 	csvWriter := csv.NewWriter(f)
+	csvWriter.Comma = ';'
 	if exportAllFields { 
 		err := csvWriter.Write(entries[0].GetCSVHeaderAllData())
 		if err != nil {
@@ -63,6 +64,7 @@ func exportCSV(entries []Entry) error {
 			}
 		}
 	}
+	csvWriter.Flush()
 	return nil 
 }
 

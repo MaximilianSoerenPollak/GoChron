@@ -106,10 +106,10 @@ func (entry *Entry) SetFinishFromString(finish string) (time.Time, error) {
 
 
 func (entry *Entry) GetCSVHeaderAllData() []string { 
-	return []string{"date", "begin", "finish", "project", "hours", "task", "notes"}	
+	return []string{"date", "begin", "finish", "project", "task", "hours", "notes"}	
 }
 func (entry *Entry) GetCSVHeaderShortData() []string { 
-	return []string{"date", "project", "hours", "task"}	
+	return []string{"date", "project", "task", "hours"}	
 }
 
 func (entry *Entry) IsFinishedAfterBegan() bool {
@@ -158,8 +158,8 @@ func (entry *Entry) ConvertToCSVAllData() []string {
 		entry.Begin.String(), 
 		entry.Finish.String(), 
 		entry.Project,
-		entry.Hours,
 		entry.Task,
+		entry.Hours,
 		entry.Notes,
 	}
 }
@@ -168,8 +168,8 @@ func (entry *Entry) ConvertToCSVShortData() []string {
 	return []string{
 		entry.Date, 
 		entry.Project,
-		entry.Hours,
 		entry.Task,
+		entry.Hours,
 	}
 }
 

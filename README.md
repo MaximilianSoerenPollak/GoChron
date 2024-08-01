@@ -20,8 +20,8 @@ Table of contents:
 
 ## Changes to know
 
-I just realeased the `v0.1.0-beta`, you can head over there to read about the changes too. 
-[Read the release]()
+I just realeased the `v0.1.0`, you can head over there to read about the changes too. 
+[Read the release](https://github.com/MaximilianSoerenPollak/zeit/releases/tag/v.0.1.0)
 
 Here are some changes I have made to my fork, that you should be aware of if you use this one.  
 - Removed 'extras' as I had no need for them 
@@ -32,7 +32,7 @@ Here are some changes I have made to my fork, that you should be aware of if you
 ### Building
 You can build the project by using the 'makefile' or by just using go itself. 
 ```sh
-make VERSION=0.1.0-beta # to make the newest version.
+make VERSION=0.1.0 # to make the newest version.
 ```
 or via go 
 ```sh 

@@ -1,4 +1,4 @@
-module github.com/mrusme/zeit
+module github.com/MaximilianSoerenPollak/zeit
 
 go 1.22.3
 

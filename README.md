@@ -8,15 +8,75 @@ I have decided to fork it as I wanted to have some additions and be able to use 
 Sadly my setup even with changes did not work with the requiered '.editorconfig'.   
 So I couldn't contribute upstream.  
 I will keep the Fork here to track my own additions if I make any more.
+[Jump to the original project README](#ZEIT)
+
+Table of contents: 
+
+- [Changes to know](#changes-to-know)
+- [How to build/install](#building)
+- [What is new](#New-additions)
+- [Issues](#Issues)
+
+
+## Changes to know
+
+I just realeased the `v0.1.0-beta`, you can head over there to read about the changes too. 
+[Read the release]()
+
+Here are some changes I have made to my fork, that you should be aware of if you use this one.  
+- Removed 'extras' as I had no need for them 
+- Changed Go Version to 1.22.3 (to make use of new Bugfixes etc.)
+- Implemented standard 'GoFmt' formatting 
+- Changed 'default' arguments for exporting and added options to it.
+
+### Building
+You can build the project by using the 'makefile' or by just using go itself. 
+```sh
+make VERSION=0.1.0-beta # to make the newest version.
+```
+or via go 
+```sh 
+go build zeit.go  #This however makes it so the 'version' command is not set 
+```
+After you just have to move the `zeit` binary to into your 'PATH' in order to just use it as `zeit` from anywhere.  
+You can accomplish this by moving the binary to `/bin/`.   
+If you rather would just the user have execute this binary you can also make a `bin` folder in your home directory and add the zeit binary in there and add the folder to path with adding this to the *.bashrc* or your shells config file  
+`export PATH="$PATH:/usr/local/bin"`
+
+###  New additions
+
+#### Export to CSV 
+I have added the option to allow `zeit` to also export to 'csv'. Currently it will use `;` as a seperator
+but the plan is to have that configurable in the future.  
+How to use it: 
+
+```sh 
+$ zeit export --format "csv" --file-name "exportedTimes.csv"
+```
+
+#### Extra options to export 
+There are some new additions to the export command.
+- `date` in a *YYYY-MM-DD Format*. Flag -> `--date` 
+- `hours` which just adds the calulated hours per task to the export. Flag -> `--hours-decimal` 
+
+They can be accessed via flags (booleans) to turn them on/off. By default both are `true` so your exports will contain them
+If you'd like either, or both to be false just supply the correct flag with `false`, like so:  
+```sh 
+$ zeit export --hours-decimal false --date false
+```
+
+- `exportAllFields` which **adds** the **'Begin, Finish & Notes'** fields to the csv export. Default: `false`  
+For now this only does something when you specified `--format "csv"` but this will change in the future and apply to all exports.
 
 
 
-**Please see the original README of the Project below.**
+### Issues 
+If you find issues or bugs, by all means please open an issue with a description and I will take a look at it as soon as I can. 
 
 ---
 ---
 
-Zeit
+ZEIT
 ----
 
 ![zeit](documentation/zeit.png)

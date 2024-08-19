@@ -28,7 +28,6 @@ var eraseCmd = &cobra.Command{
 		}
 
 		fmt.Printf("%s erased %s\n", CharInfo, color.FgLightWhite.Render(id))
-		return
 	},
 }
 

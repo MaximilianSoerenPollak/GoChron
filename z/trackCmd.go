@@ -3,6 +3,8 @@ package z
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"errors"
+	"database/sql"
 	"os"
 )
 
@@ -14,8 +16,13 @@ var trackCmd = &cobra.Command{
 
 		entry, err := database.GetRunningEntry()
 		if err != nil {
-			fmt.Printf("something went wrong getting current runnign entries. Error: %s", err.Error())
-			os.Exit(1)
+			switch {
+			case errors.Is(err, sql.ErrNoRows):
+				//ignore this, as there are no tasks running, which is what we want.
+			default:
+				fmt.Printf("%s %+v\n", CharError, err)
+				os.Exit(1)
+			}
 		}
 		if entry != nil {
 			fmt.Printf("A task is already running, you have to finish this one first before you start a new one")
@@ -38,8 +45,7 @@ var trackCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf(newEntry.GetStartTrackingStr())
-		return
+		fmt.Print(newEntry.GetStartTrackingStr())
 	},
 }
 

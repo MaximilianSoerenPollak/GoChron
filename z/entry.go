@@ -48,13 +48,13 @@ func (entry *Entry) SetBegining() {
 }
 
 func (entry *Entry) GetOutputStrLong() string {
-	return fmt.Sprintf(`Task: %s on Project: %s started at: %s finished at: %s and in total has %f hours`,
-		entry.Task, entry.Begin.String(), entry.Finish.String(), entry.Hours)
+	return fmt.Sprintf(`Task: %s on Project: %s started at: %s finished at: %s and in total has %s hours`,
+		entry.Task, entry.Project, entry.Begin.String(), entry.Finish.String(), entry.Hours.String())
 }
 
 func (entry *Entry) GetOutputStrShort() string {
-	return fmt.Sprintf(`Task: %s Project: %s Dated: %s Hours: %f `,
-		entry.Task, entry.Project, entry.Date, entry.Hours)
+	return fmt.Sprintf(`Task: %s Project: %s Dated: %s Hours: %s `,
+		entry.Task, entry.Project, entry.Date, entry.Hours.String())
 }
 
 func (entry *Entry) GetStartTrackingStr() string {

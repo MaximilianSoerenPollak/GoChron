@@ -1,6 +1,8 @@
 package z
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -16,10 +18,16 @@ var finishCmd = &cobra.Command{
 
 		runningEntry, err := database.GetRunningEntry()
 		if err != nil {
-			fmt.Printf("%s %+v\n", CharError, err)
-			os.Exit(1)
+			switch {
+			case errors.Is(err, sql.ErrNoRows):
+				fmt.Printf("%s no task is currently running. Can only finish a running task.\n", CharFinish)
+				os.Exit(1)
+			default:
+				fmt.Printf("%s %+v\n", CharError, err)
+				os.Exit(1)
+			}
 		}
-
+		// Redudant but I keep it for now.
 		if runningEntry == nil {
 			fmt.Printf("%s no task is currently running. Can only finish a running task.\n", CharFinish)
 			os.Exit(1)
@@ -27,15 +35,14 @@ var finishCmd = &cobra.Command{
 		// Finishing the entry
 		runningEntry.SetFinish()
 		if notes != "" {
-			runningEntry.Notes = strings.Replace(notes, "\\n", "\n", -1)
+			runningEntry.Notes = strings.ReplaceAll(notes, "\\n", "\n")
 		}
 		err = database.UpdateEntry(*runningEntry)
 		if err != nil {
-			fmt.Errorf("%s something ent wrong updating the entry. Error: %s", CharError, err.Error())
+			fmt.Printf("%s something ent wrong updating the entry. Error: %s", CharError, err.Error())
 			os.Exit(1)
 		}
 		fmt.Println(runningEntry.GetOutputForFinish())
-		return
 	},
 }
 

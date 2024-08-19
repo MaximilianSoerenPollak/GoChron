@@ -25,6 +25,7 @@ func InitDB() (*Database, error) {
 	}
 	db, err := sql.Open("sqlite3", dbLocation)
 	if err != nil {
+		fmt.Printf("Encountered error opening the db, Error: %s", err.Error())
 		return nil, err
 	}
 	err = createDefaultTables(db)
@@ -254,17 +255,18 @@ func createDefaultTables(db *sql.DB) error {
 	query := `CREATE TABLE IF NOT EXISTS entries(
 			ID INTEGER PRIMARY KEY AUTOINCREMENT,
 			date  NOT NULL,
-			start TIMESTAMP/DATETIME NOT NULL,
-			finish TIMESTAMP/DATETIME,
+			start DATETIME NOT NULL,
+			finish DATETIME,
 			hours  FLOAT,
 			project TEXT NOT NULL,
 			task   TEXT NOT NULL,
-			notes  TEXT
+			notes  TEXT,
 			running BOOL);`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_, err := db.ExecContext(ctx, query)
 	if err != nil {
+		fmt.Printf("error while making default table. Error: %s", err.Error())
 		return err
 	}
 	return nil

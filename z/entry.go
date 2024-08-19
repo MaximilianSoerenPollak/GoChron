@@ -31,7 +31,7 @@ type EntriesGroupedByDay struct {
 	Hours    decimal.Decimal
 }
 
-func NewEntry(project string,task string) Entry {
+func NewEntry(project string, task string) Entry {
 
 	newEntry := Entry{}
 
@@ -39,22 +39,19 @@ func NewEntry(project string,task string) Entry {
 	newEntry.Task = task
 
 	newEntry.SetBegining()
-	return newEntry 
+	return newEntry
 }
-
-
-
 
 func (entry *Entry) SetDateFromBegining() {
 	entry.Date = entry.Begin.Format("02-01-2006")
 }
 
 func (entry *Entry) SetBegining() {
-	entry.Begin = time.Now()	
+	entry.Begin = time.Now()
 }
 
 func (entry *Entry) GetOutputStrLong() string {
-return fmt.Sprintf(`Task: %s on Project: %s started at: %s finished at: %s and in total has %f hours`,
+	return fmt.Sprintf(`Task: %s on Project: %s started at: %s finished at: %s and in total has %f hours`,
 		entry.Task, entry.Begin.String(), entry.Finish.String(), entry.Hours)
 }
 
@@ -67,8 +64,6 @@ func (entry *Entry) GetStartTrackingStr() string {
 	return fmt.Sprintf(`Started tracking --> Task: %s on Project: %s `,
 		entry.Task, entry.Project)
 }
-
-
 
 func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 	var beginTime time.Time
@@ -89,7 +84,6 @@ func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 func (entry *Entry) SetFinish() {
 	entry.Finish = time.Now()
 }
-
 
 func (entry *Entry) SetFinishFromString(finish string) (time.Time, error) {
 	var finishTime time.Time

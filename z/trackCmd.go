@@ -11,7 +11,7 @@ var trackCmd = &cobra.Command{
 	Short: "Tracking time",
 	Long:  "Track new activity, which can either be kept running until 'finish' is being called or parameterized to be a finished activity.",
 	Run: func(cmd *cobra.Command, args []string) {
-	
+
 		entry, err := database.GetRunningEntry()
 		if err != nil {
 			fmt.Printf("something went wrong getting current runnign entries. Error: %s", err.Error())
@@ -33,8 +33,8 @@ var trackCmd = &cobra.Command{
 			newEntry.Notes = notes
 		}
 		err = database.AddEntry(&newEntry)
-		if err != nil { 
-			fmt.Errorf("something went wrong. Error: %s", err.Error()) 
+		if err != nil {
+			fmt.Errorf("something went wrong. Error: %s", err.Error())
 			os.Exit(1)
 		}
 

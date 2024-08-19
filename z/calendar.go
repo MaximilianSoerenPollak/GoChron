@@ -2,9 +2,9 @@ package z
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
-	"os"
 
 	"github.com/jinzhu/now"
 	"github.com/shopspring/decimal"
@@ -23,7 +23,7 @@ type Week struct {
 	Statistics WeekStatistics
 }
 
-type hexcolor string 
+type hexcolor string
 
 type Month struct {
 	Name  string
@@ -35,7 +35,6 @@ type Calendar struct {
 	Distribution map[string]Statistic
 	TotalHours   decimal.Decimal
 }
-
 
 func NewCalendar(entries []Entry) (Calendar, error) {
 	cal := Calendar{}
@@ -50,10 +49,10 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 	if err != nil {
 		fmt.Errorf("could not get all unique projects. Error: %s", err.Error())
 		os.Exit(1)
-	}	
+	}
 	for i, v := range projects {
-		projectsColor[v] = projectHexColors[i % 4]
-	}	
+		projectsColor[v] = projectHexColors[i%4]
+	}
 
 	for _, entry := range entries {
 		var entryFinish time.Time

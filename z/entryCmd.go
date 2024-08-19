@@ -28,7 +28,7 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
 		}
-		
+
 		if begin != "" {
 			entry.Begin, err = dateparse.ParseAny(begin)
 			if err != nil {
@@ -61,9 +61,9 @@ var entryCmd = &cobra.Command{
 		if err != nil {
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
-		}	
-	fmt.Printf("%s %s\n", CharInfo, entry.GetOutput(true))
-	return
+		}
+		fmt.Printf("%s %s\n", CharInfo, entry.GetOutput(true))
+		return
 	},
 }
 

@@ -18,14 +18,14 @@ var trackCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		if entry != nil {
-			fmt.Errorf("A task is already running, you have to finish this one first before you start a new one")
+			fmt.Printf("A task is already running, you have to finish this one first before you start a new one")
 			os.Exit(1)
 		}
 		if task == "" {
-			fmt.Errorf("Can not track empty task. Please assign a task via --task to track")
+			fmt.Printf("Can not track empty task. Please assign a task via --task to track")
 		}
 		if project == "" {
-			fmt.Errorf("You have to add a project (via --project) to which this task should be assigned too")
+			fmt.Printf("You have to add a project (via --project) to which this task should be assigned too")
 			os.Exit(1)
 		}
 		newEntry := NewEntry(project, task)
@@ -34,11 +34,11 @@ var trackCmd = &cobra.Command{
 		}
 		err = database.AddEntry(&newEntry)
 		if err != nil {
-			fmt.Errorf("something went wrong. Error: %s", err.Error())
+			fmt.Printf("something went wrong. Error: %s", err.Error())
 			os.Exit(1)
 		}
 
-		fmt.Printf(newEntry.ConstructStartingOutput())
+		fmt.Printf(newEntry.GetStartTrackingStr())
 		return
 	},
 }

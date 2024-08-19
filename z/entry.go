@@ -1,10 +1,7 @@
 package z
 
 import (
-	"errors"
 	"fmt"
-	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -83,6 +80,7 @@ func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 }
 func (entry *Entry) SetFinish() {
 	entry.Finish = time.Now()
+	entry.Running = false
 }
 
 func (entry *Entry) SetFinishFromString(finish string) (time.Time, error) {
@@ -254,60 +252,32 @@ func GetFilteredEntries(entries []Entry, project string, task string, since time
 	return filteredEntries, nil
 }
 
-func GroupByProject(entries []Entry, user string) ([]Entry, error) {
-	db, err := InitDatabase()
-	if err != nil {
-		return nil, err
-	}
-	uniqueProjects, err := db.GetUniqueProjects(user)
-	if err != nil {
-		return nil, err
-	}
-	var entriesGrouped []Entry
-	for _, v := range uniqueProjects {
-		var tmpEnt []Entry
-		for _, e := range entries {
-			if e.Project == v.Name {
-				tmpEnt = append(tmpEnt, e)
-			}
-		}
-		entriesGrouped = append(entriesGrouped, tmpEnt...)
-	}
-	return entriesGrouped, nil
-}
-
-func SortEntries(entries []Entry, user, sortingType string) ([]Entry, error) {
-	fmt.Printf("These are the incoming entries: \n %v\n", entries)
-	switch sortingType {
-	case "chronological":
-		sort.Slice(entries, func(i, j int) bool {
-			return entries[i].Begin.After(entries[j].Begin)
-		})
-	case "project":
-		sortedEntries, err := GroupByProject(entries, user)
-		if err != nil {
-			return nil, err
-		}
-		entries = sortedEntries
-	case "hours":
-		sort.Slice(entries, func(i, j int) bool {
-			iInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
-			if err != nil {
-				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
-			}
-			jInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
-			decimal.NewFromString(entries[i].Hours.String())
-			if err != nil {
-				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
-			}
-			return iInt > jInt
-		})
-	case "time":
-		sort.Slice(entries, func(i, j int) bool {
-			return entries[i].Begin.After(entries[j].Begin)
-		})
-	}
-
-	fmt.Printf("These are the outgoing entries: \n %v", entries)
-	return entries, nil
-}
+// func SortEntries(entries []Entry, user, sortingType string) ([]Entry, error) {
+// 	fmt.Printf("These are the incoming entries: \n %v\n", entries)
+// 	switch sortingType {
+// 	case "chronological":
+// 		sort.Slice(entries, func(i, j int) bool {
+// 			return entries[i].Begin.After(entries[j].Begin)
+// 		})
+// 	case "hours":
+// 		sort.Slice(entries, func(i, j int) bool {
+// 			iInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
+// 			if err != nil {
+// 				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
+// 			}
+// 			jInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
+// 			decimal.NewFromString(entries[i].Hours.String())
+// 			if err != nil {
+// 				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
+// 			}
+// 			return iInt > jInt
+// 		})
+// 	case "time":
+// 		sort.Slice(entries, func(i, j int) bool {
+// 			return entries[i].Begin.After(entries[j].Begin)
+// 		})
+// 	}
+//
+// 	fmt.Printf("These are the outgoing entries: \n %v", entries)
+// 	return entries, nil
+// }

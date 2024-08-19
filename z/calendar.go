@@ -60,8 +60,6 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 		sameDayHours := decimal.NewFromInt(0)
 		nextDayHours := decimal.NewFromInt(0)
 
-		projectId := GetIdFromName(entry.Project)
-
 		if entry.Finish.IsZero() {
 			entryFinish = time.Now()
 		} else {

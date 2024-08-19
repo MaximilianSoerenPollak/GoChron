@@ -20,16 +20,6 @@ func exportZeitJson(entries []Entry) (string, error) {
 	return string(stringified), nil
 }
 
-func exportTymeJson(entries []Entry) (string, error) {
-	tyme := Tyme{}
-	err := tyme.FromEntries(entries)
-	if err != nil {
-		return "", err
-	}
-
-	return tyme.Stringify(), nil
-}
-
 func exportCSV(entries []Entry) error {
 	// TODO: There has to be a nicer way to write this, for now this is okay.
 	f, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
@@ -76,9 +66,7 @@ var exportCmd = &cobra.Command{
 		var entries []Entry
 		var err error
 
-		user := GetCurrentUser()
-
-		entries, err = database.ListEntries(user)
+		entries, err = database.GetAllEntries()
 		if err != nil {
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
@@ -114,7 +102,7 @@ var exportCmd = &cobra.Command{
 			var addedInformationEntries []Entry
 			for _, v := range filteredEntries {
 				if exportHours {
-					v.Hours = fmtHours(v.GetDuration())
+					v.Hours = v.GetDuration()
 				}
 				if exportDate {
 					v.SetDateFromBegining()
@@ -124,7 +112,7 @@ var exportCmd = &cobra.Command{
 			// Reasignment here so we don't need to check other flags later
 			filteredEntries = addedInformationEntries
 		}
-		sortedEntries, err := SortEntries(filteredEntries, user, sorting)
+		// sortedEntries, err := SortEntries(filteredEntries, user, sorting)
 		if err != nil {
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
@@ -132,19 +120,13 @@ var exportCmd = &cobra.Command{
 		var output = ""
 		switch format {
 		case "csv":
-			err = exportCSV(sortedEntries)
+			err = exportCSV(filteredEntries)
 			if err != nil {
 				fmt.Printf("%s %+v\n", CharError, err)
 				os.Exit(1)
 			}
 		case "zeit":
-			output, err = exportZeitJson(sortedEntries)
-			if err != nil {
-				fmt.Printf("%s %+v\n", CharError, err)
-				os.Exit(1)
-			}
-		case "tyme":
-			output, err = exportTymeJson(sortedEntries)
+			output, err = exportZeitJson(filteredEntries)
 			if err != nil {
 				fmt.Printf("%s %+v\n", CharError, err)
 				os.Exit(1)
@@ -171,7 +153,7 @@ func init() {
 	exportCmd.Flags().StringVar(&sorting, "sorting", "time", "Set the sorting way, on how we want the tasks sorted.")
 	exportCmd.Flags().BoolVar(&exportAllFields, "export-all-fields", false, "Set to true if you want to export all the available fields to the csv")
 	var err error
-	database, err = InitDatabase()
+	database, err = InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)

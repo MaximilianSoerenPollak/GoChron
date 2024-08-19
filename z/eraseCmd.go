@@ -5,6 +5,7 @@ import (
 	"github.com/gookit/color"
 	"github.com/spf13/cobra"
 	"os"
+	"strconv"
 )
 
 var eraseCmd = &cobra.Command{
@@ -13,10 +14,14 @@ var eraseCmd = &cobra.Command{
 	Long:  "Erase tracked activity.",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		user := GetCurrentUser()
-		id := args[0]
+		idStr := args[0]
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			fmt.Printf("%s %s", CharError, "Please provide a valid number")
+			os.Exit(1)
+		}
 
-		err := database.EraseEntry(user, id)
+		err = database.DeleteEntry(int64(id))
 		if err != nil {
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
@@ -31,7 +36,7 @@ func init() {
 	rootCmd.AddCommand(eraseCmd)
 
 	var err error
-	database, err = InitDatabase()
+	database, err = InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)

@@ -15,9 +15,8 @@ var statsCmd = &cobra.Command{
 	Short: "Display activity statistics",
 	Long:  "Display statistics on all tracked activities.",
 	Run: func(cmd *cobra.Command, args []string) {
-		user := GetCurrentUser()
 
-		entries, err := database.ListEntries(user)
+		entries, err := database.GetAllEntries()
 		if err != nil {
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
@@ -53,7 +52,7 @@ func init() {
 	rootCmd.AddCommand(statsCmd)
 	statsCmd.Flags().BoolVar(&fractional, "decimal", false, "Show fractional hours in decimal format instead of minutes")
 	var err error
-	database, err = InitDatabase()
+	database, err = InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)

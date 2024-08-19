@@ -3,6 +3,8 @@ package z
 import (
 	"errors"
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -11,66 +13,62 @@ import (
 )
 
 type Entry struct {
-	ID      string    `json:"-"`
-	Date    string    `json:"date,omitempty"`
-	Begin   time.Time `json:"begin,omitempty"`
-	Finish  time.Time `json:"finish,omitempty"`
-	Project string    `json:"project,omitempty"`
-	Hours   string    `json:"hours,omitempty"`
-	Task    string    `json:"task,omitempty"`
-	Notes   string    `json:"notes,omitempty"`
-	User    string    `json:"-"`
-
-	SHA1 string `json:"-"`
+	ID      int64           `json:"-"`
+	Date    string          `json:"date,omitempty"`
+	Begin   time.Time       `json:"begin,omitempty"`
+	Finish  time.Time       `json:"finish,omitempty"`
+	Project string          `json:"project,omitempty"`
+	Hours   decimal.Decimal `json:"hours,omitempty"`
+	Task    string          `json:"task,omitempty"`
+	Notes   string          `json:"notes,omitempty"`
+	Running bool            `json:"-"`
 }
 
-func NewEntry(
-	id string,
-	begin string,
-	finish string,
-	project string,
-	task string,
-	user string) (Entry, error) {
-	var err error
+type EntriesGroupedByDay struct {
+	Date     string
+	Projects int8
+	Tasks    int8
+	Hours    decimal.Decimal
+}
+
+func NewEntry(project string,task string) Entry {
 
 	newEntry := Entry{}
 
-	newEntry.ID = id
 	newEntry.Project = project
 	newEntry.Task = task
-	newEntry.User = user
 
-	_, err = newEntry.SetBeginFromString(begin)
-	if err != nil {
-		return Entry{}, err
-	}
-
-	_, err = newEntry.SetFinishFromString(finish)
-	if err != nil {
-		return Entry{}, err
-	}
-
-	if id == "" && !newEntry.IsFinishedAfterBegan() {
-		return Entry{}, errors.New("beginning time of tracking cannot be after finish time")
-	}
-
-	return newEntry, nil
+	newEntry.SetBegining()
+	return newEntry 
 }
 
-func (entry *Entry) SetIDFromDatabaseKey(key string) error {
-	splitKey := strings.Split(key, ":")
 
-	if len(splitKey) < 3 || len(splitKey) > 3 {
-		return errors.New("not a valid database key")
-	}
 
-	entry.ID = splitKey[2]
-	return nil
-}
 
 func (entry *Entry) SetDateFromBegining() {
 	entry.Date = entry.Begin.Format("02-01-2006")
 }
+
+func (entry *Entry) SetBegining() {
+	entry.Begin = time.Now()	
+}
+
+func (entry *Entry) GetOutputStrLong() string {
+return fmt.Sprintf(`Task: %s on Project: %s started at: %s finished at: %s and in total has %f hours`,
+		entry.Task, entry.Begin.String(), entry.Finish.String(), entry.Hours)
+}
+
+func (entry *Entry) GetOutputStrShort() string {
+	return fmt.Sprintf(`Task: %s Project: %s Dated: %s Hours: %f `,
+		entry.Task, entry.Project, entry.Date, entry.Hours)
+}
+
+func (entry *Entry) GetStartTrackingStr() string {
+	return fmt.Sprintf(`Started tracking --> Task: %s on Project: %s `,
+		entry.Task, entry.Project)
+}
+
+
 
 func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 	var beginTime time.Time
@@ -88,6 +86,10 @@ func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 	entry.Begin = beginTime
 	return beginTime, nil
 }
+func (entry *Entry) SetFinish() {
+	entry.Finish = time.Now()
+}
+
 
 func (entry *Entry) SetFinishFromString(finish string) (time.Time, error) {
 	var finishTime time.Time
@@ -104,12 +106,11 @@ func (entry *Entry) SetFinishFromString(finish string) (time.Time, error) {
 	return finishTime, nil
 }
 
-
-func (entry *Entry) GetCSVHeaderAllData() []string { 
-	return []string{"date", "begin", "finish", "project", "task", "hours", "notes"}	
+func (entry *Entry) GetCSVHeaderAllData() []string {
+	return []string{"date", "begin", "finish", "project", "task", "hours", "notes"}
 }
-func (entry *Entry) GetCSVHeaderShortData() []string { 
-	return []string{"date", "project", "task", "hours"}	
+func (entry *Entry) GetCSVHeaderShortData() []string {
+	return []string{"date", "project", "task", "hours"}
 }
 
 func (entry *Entry) IsFinishedAfterBegan() bool {
@@ -154,22 +155,22 @@ func (entry *Entry) GetDuration() decimal.Decimal {
 
 func (entry *Entry) ConvertToCSVAllData() []string {
 	return []string{
-		entry.Date, 
-		entry.Begin.String(), 
-		entry.Finish.String(), 
+		entry.Date,
+		entry.Begin.String(),
+		entry.Finish.String(),
 		entry.Project,
 		entry.Task,
-		entry.Hours,
+		entry.Hours.String(),
 		entry.Notes,
 	}
 }
 
 func (entry *Entry) ConvertToCSVShortData() []string {
 	return []string{
-		entry.Date, 
+		entry.Date,
 		entry.Project,
 		entry.Task,
-		entry.Hours,
+		entry.Hours.String(),
 	}
 }
 
@@ -257,4 +258,62 @@ func GetFilteredEntries(entries []Entry, project string, task string, since time
 	}
 
 	return filteredEntries, nil
+}
+
+func GroupByProject(entries []Entry, user string) ([]Entry, error) {
+	db, err := InitDatabase()
+	if err != nil {
+		return nil, err
+	}
+	uniqueProjects, err := db.GetUniqueProjects(user)
+	if err != nil {
+		return nil, err
+	}
+	var entriesGrouped []Entry
+	for _, v := range uniqueProjects {
+		var tmpEnt []Entry
+		for _, e := range entries {
+			if e.Project == v.Name {
+				tmpEnt = append(tmpEnt, e)
+			}
+		}
+		entriesGrouped = append(entriesGrouped, tmpEnt...)
+	}
+	return entriesGrouped, nil
+}
+
+func SortEntries(entries []Entry, user, sortingType string) ([]Entry, error) {
+	fmt.Printf("These are the incoming entries: \n %v\n", entries)
+	switch sortingType {
+	case "chronological":
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].Begin.After(entries[j].Begin)
+		})
+	case "project":
+		sortedEntries, err := GroupByProject(entries, user)
+		if err != nil {
+			return nil, err
+		}
+		entries = sortedEntries
+	case "hours":
+		sort.Slice(entries, func(i, j int) bool {
+			iInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
+			if err != nil {
+				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
+			}
+			jInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
+			decimal.NewFromString(entries[i].Hours.String())
+			if err != nil {
+				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
+			}
+			return iInt > jInt
+		})
+	case "time":
+		sort.Slice(entries, func(i, j int) bool {
+			return entries[i].Begin.After(entries[j].Begin)
+		})
+	}
+
+	fmt.Printf("These are the outgoing entries: \n %v", entries)
+	return entries, nil
 }

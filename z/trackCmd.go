@@ -11,38 +11,34 @@ var trackCmd = &cobra.Command{
 	Short: "Tracking time",
 	Long:  "Track new activity, which can either be kept running until 'finish' is being called or parameterized to be a finished activity.",
 	Run: func(cmd *cobra.Command, args []string) {
-		user := GetCurrentUser()
-
-		runningEntryId, err := database.GetRunningEntryId(user)
+	
+		entry, err := database.GetRunningEntry()
 		if err != nil {
-			fmt.Printf("%s %+v\n", CharError, err)
+			fmt.Printf("something went wrong getting current runnign entries. Error: %s", err.Error())
 			os.Exit(1)
 		}
-
-		if runningEntryId != "" {
-			fmt.Printf("%s a task is already running\n", CharTrack)
+		if entry != nil {
+			fmt.Errorf("A task is already running, you have to finish this one first before you start a new one")
 			os.Exit(1)
 		}
-
-		newEntry, err := NewEntry("", begin, finish, project, task, user)
-		if err != nil {
-			fmt.Printf("%s %+v\n", CharError, err)
+		if task == "" {
+			fmt.Errorf("Can not track empty task. Please assign a task via --task to track")
+		}
+		if project == "" {
+			fmt.Errorf("You have to add a project (via --project) to which this task should be assigned too")
 			os.Exit(1)
 		}
-
+		newEntry := NewEntry(project, task)
 		if notes != "" {
 			newEntry.Notes = notes
 		}
-
-		isRunning := newEntry.Finish.IsZero()
-
-		_, err = database.AddEntry(user, newEntry, isRunning)
-		if err != nil {
-			fmt.Printf("%s %+v\n", CharError, err)
+		err = database.AddEntry(&newEntry)
+		if err != nil { 
+			fmt.Errorf("something went wrong. Error: %s", err.Error()) 
 			os.Exit(1)
 		}
 
-		fmt.Printf(newEntry.GetOutputForTrack(isRunning, false))
+		fmt.Printf(newEntry.ConstructStartingOutput())
 		return
 	},
 }
@@ -54,10 +50,9 @@ func init() {
 	trackCmd.Flags().StringVarP(&project, "project", "p", "", "Project to be assigned")
 	trackCmd.Flags().StringVarP(&task, "task", "t", "", "Task to be assigned")
 	trackCmd.Flags().StringVarP(&notes, "notes", "n", "", "Activity notes")
-	trackCmd.Flags().BoolVarP(&force, "force", "f", false, "Force begin tracking of a new task \neven though another one is still running \n(ONLY IF YOU KNOW WHAT YOU'RE DOING!)")
 
 	var err error
-	database, err = InitDatabase()
+	database, err = InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)

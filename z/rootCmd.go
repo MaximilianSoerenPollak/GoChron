@@ -19,6 +19,7 @@ var exportDate bool
 var exportHours bool
 var fileName string
 var exportAllFields bool
+var sorting string
 
 var since string
 var until string

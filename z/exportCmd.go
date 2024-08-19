@@ -1,11 +1,11 @@
 package z
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"os"
 	"time"
-	"encoding/csv"
 
 	"github.com/jinzhu/now"
 	"github.com/spf13/cobra"
@@ -30,42 +30,41 @@ func exportTymeJson(entries []Entry) (string, error) {
 	return tyme.Stringify(), nil
 }
 
-
-func exportCSV(entries []Entry) error { 
+func exportCSV(entries []Entry) error {
 	// TODO: There has to be a nicer way to write this, for now this is okay.
-	f, err := os.OpenFile(fileName, os.O_CREATE| os.O_APPEND | os.O_WRONLY, 0666)
+	f, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 	if err != nil {
-		return err 
+		return err
 	}
 	defer f.Close()
 	csvWriter := csv.NewWriter(f)
 	csvWriter.Comma = ';'
-	if exportAllFields { 
+	if exportAllFields {
 		err := csvWriter.Write(entries[0].GetCSVHeaderAllData())
 		if err != nil {
-			return err 
+			return err
 		}
 	} else {
 		err := csvWriter.Write(entries[0].GetCSVHeaderShortData())
 		if err != nil {
-			return err 
+			return err
 		}
 	}
 	for _, v := range entries {
 		if exportAllFields {
 			err := csvWriter.Write(v.ConvertToCSVAllData())
 			if err != nil {
-				return err 
+				return err
 			}
 		} else {
 			err := csvWriter.Write(v.ConvertToCSVShortData())
 			if err != nil {
-				return err 
+				return err
 			}
 		}
 	}
 	csvWriter.Flush()
-	return nil 
+	return nil
 }
 
 var exportCmd = &cobra.Command{
@@ -125,23 +124,27 @@ var exportCmd = &cobra.Command{
 			// Reasignment here so we don't need to check other flags later
 			filteredEntries = addedInformationEntries
 		}
-
+		sortedEntries, err := SortEntries(filteredEntries, user, sorting)
+		if err != nil {
+			fmt.Printf("%s %+v\n", CharError, err)
+			os.Exit(1)
+		}
 		var output = ""
 		switch format {
-		case "csv": 
-			err = exportCSV(filteredEntries)
+		case "csv":
+			err = exportCSV(sortedEntries)
 			if err != nil {
 				fmt.Printf("%s %+v\n", CharError, err)
 				os.Exit(1)
 			}
 		case "zeit":
-			output, err = exportZeitJson(filteredEntries)
+			output, err = exportZeitJson(sortedEntries)
 			if err != nil {
 				fmt.Printf("%s %+v\n", CharError, err)
 				os.Exit(1)
 			}
 		case "tyme":
-			output, err = exportTymeJson(filteredEntries)
+			output, err = exportTymeJson(sortedEntries)
 			if err != nil {
 				fmt.Printf("%s %+v\n", CharError, err)
 				os.Exit(1)
@@ -155,8 +158,6 @@ var exportCmd = &cobra.Command{
 	},
 }
 
-
-
 func init() {
 	rootCmd.AddCommand(exportCmd)
 	exportCmd.Flags().StringVar(&format, "format", "zeit", "Format to export, possible values: zeit, tyme, csv")
@@ -167,8 +168,8 @@ func init() {
 	exportCmd.Flags().BoolVar(&exportDate, "date", true, "Set to true, if you want to export the 'Date' aswell")
 	exportCmd.Flags().BoolVar(&exportHours, "hours-decimal", true, "Set to true if you want calculated Hours to be exported too")
 	exportCmd.Flags().StringVar(&fileName, "file-name", "", "Set the output file for the csv export")
+	exportCmd.Flags().StringVar(&sorting, "sorting", "time", "Set the sorting way, on how we want the tasks sorted.")
 	exportCmd.Flags().BoolVar(&exportAllFields, "export-all-fields", false, "Set to true if you want to export all the available fields to the csv")
-
 	var err error
 	database, err = InitDatabase()
 	if err != nil {

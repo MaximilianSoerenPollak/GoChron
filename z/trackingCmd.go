@@ -11,26 +11,17 @@ var trackingCmd = &cobra.Command{
 	Short: "Currently tracking activity",
 	Long:  "Show currently tracking activity.",
 	Run: func(cmd *cobra.Command, args []string) {
-		user := GetCurrentUser()
 
-		runningEntryId, err := database.GetRunningEntryId(user)
+		entry, err := database.GetRunningEntry()
 		if err != nil {
-			fmt.Printf("%s %+v\n", CharError, err)
+			fmt.Printf("something went wrong getting current runnign entries. Error: %s", err.Error())
 			os.Exit(1)
 		}
-
-		if runningEntryId == "" {
-			fmt.Printf("%s not running\n", CharFinish)
+		if entry == nil {
+			fmt.Printf("%s No task currently running.", CharFinish)
 			os.Exit(1)
 		}
-
-		runningEntry, err := database.GetEntry(user, runningEntryId)
-		if err != nil {
-			fmt.Printf("%s %+v\n", CharError, err)
-			os.Exit(1)
-		}
-
-		fmt.Printf(runningEntry.GetOutputForTrack(true, true))
+		fmt.Printf("%s %s", CharTrack, entry.GetOutputStrShort())
 		return
 	},
 }
@@ -39,7 +30,7 @@ func init() {
 	rootCmd.AddCommand(trackingCmd)
 
 	var err error
-	database, err = InitDatabase()
+	database, err = InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)

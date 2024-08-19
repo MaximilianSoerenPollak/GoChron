@@ -1,321 +1,272 @@
 package z
 
 import (
-	"encoding/json"
-	"errors"
-	"log"
+	"context"
+	"database/sql"
+	"fmt"
 	"os"
-	"sort"
-	"strings"
+	"time"
 
-	"github.com/google/uuid"
-	"github.com/tidwall/buntdb"
+	_ "github.com/mattn/go-sqlite3"
+
 )
 
 type Database struct {
-	DB *buntdb.DB
+	DB *sql.DB
 }
 
-func InitDatabase() (*Database, error) {
-	dbfile, ok := os.LookupEnv("ZEIT_DB")
-	if !ok || dbfile == "" {
-		return nil, errors.New("please `export ZEIT_DB` to the location the zeit database should be stored at")
+// Decision: We do not care about the UUID and would rather use incremental ID to make also selecting easier.
+// Also I would like to remove the 'user' from the equation as this is suppose to be a 'one user' CLI
+func InitDB() (*Database, error) {
+	// Will make '.config/zeit.db' the default
+	dbLocation, ok := os.LookupEnv("ZEIT_DB")
+	if !ok || dbLocation == "" {
+		fmt.Println("Did not find 'ZEIT_DB' env. variable specified. Will use `$HOME/.config/zeit.db` as default")
+		dbLocation = "$HOME/.config/zeit.db"
 	}
-
-	db, err := buntdb.Open(dbfile)
+	db, err := sql.Open("sqlite3", dbLocation)
 	if err != nil {
 		return nil, err
 	}
-
-	db.CreateIndex("task", "*", buntdb.IndexJSON("task"))
-	db.CreateIndex("project", "*", buntdb.IndexJSON("project"))
-
-	database := Database{db}
-	return &database, nil
-}
-
-func (database *Database) NewID() string {
-	id, err := uuid.NewRandom()
+	err = createDefaultTables(db)
 	if err != nil {
-		log.Fatalf("could not generate UUID: %+v", err)
+		return nil, err
 	}
-	return id.String()
+	return &Database{DB: db}, nil
 }
 
-func (database *Database) AddEntry(user string, entry Entry, setRunning bool) (string, error) {
-	id := database.NewID()
-
-	entryJson, jsonerr := json.Marshal(entry)
-	if jsonerr != nil {
-		return id, jsonerr
-	}
-
-	dberr := database.DB.Update(func(tx *buntdb.Tx) error {
-		if setRunning {
-			_, _, seterr := tx.Set(user+":status:running", id, nil)
-			if seterr != nil {
-				return seterr
-			}
-		}
-		_, _, seterr := tx.Set(user+":entry:"+id, string(entryJson), nil)
-		if seterr != nil {
-			return seterr
-		}
-
-		return nil
-	})
-
-	return id, dberr
-}
-
-func (database *Database) GetEntry(user string, entryId string) (Entry, error) {
-	var entry Entry
-
-	dberr := database.DB.View(func(tx *buntdb.Tx) error {
-		value, err := tx.Get(user + ":entry:" + entryId)
-		if err != nil {
-			return err
-		}
-		json.Unmarshal([]byte(value), &entry)
-
-		entry.ID = entryId
-		return nil
-	})
-
-	return entry, dberr
-}
-
-func (database *Database) UpdateEntry(user string, entry Entry) (string, error) {
-	entryJson, jsonerr := json.Marshal(entry)
-	if jsonerr != nil {
-		return entry.ID, jsonerr
-	}
-
-	dberr := database.DB.Update(func(tx *buntdb.Tx) error {
-		_, _, seerr := tx.Set(user+":entry:"+entry.ID, string(entryJson), nil)
-		if seerr != nil {
-			return seerr
-		}
-
-		return nil
-	})
-
-	return entry.ID, dberr
-}
-
-func (database *Database) FinishEntry(user string, entry Entry) (string, error) {
-	entryJson, jsonerr := json.Marshal(entry)
-	if jsonerr != nil {
-		return entry.ID, jsonerr
-	}
-
-	dberr := database.DB.Update(func(tx *buntdb.Tx) error {
-		runningEntryId, grerr := tx.Get(user + ":status:running")
-		if grerr != nil {
-			return errors.New("no currently running entry found!")
-		}
-
-		if runningEntryId != entry.ID {
-			return errors.New("specified entry is not currently running!")
-		}
-
-		_, _, srerr := tx.Set(user+":status:running", "", nil)
-		if srerr != nil {
-			return srerr
-		}
-
-		_, _, seerr := tx.Set(user+":entry:"+entry.ID, string(entryJson), nil)
-		if seerr != nil {
-			return seerr
-		}
-
-		return nil
-	})
-
-	return entry.ID, dberr
-}
-
-func (database *Database) EraseEntry(user string, id string) error {
-	runningEntryId, err := database.GetRunningEntryId(user)
+func (db *Database) AddEntry(entry *Entry) error {
+	query := `INSERT INTO entries(date, start, finish, hours, project, task, notes) 
+				VALUES ('?','?','?','?','?','?','?', true);`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	result, err := db.DB.ExecContext(ctx, query, entry)
 	if err != nil {
 		return err
 	}
-
-	dberr := database.DB.Update(func(tx *buntdb.Tx) error {
-		if runningEntryId == id {
-			_, _, seterr := tx.Set(user+":status:running", "", nil)
-			if seterr != nil {
-				return seterr
-			}
-		}
-
-		_, delerr := tx.Delete(user + ":entry:" + id)
-		if delerr != nil {
-			return delerr
-		}
-
-		return nil
-	})
-
-	return dberr
+	entryId, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	entry.ID = entryId
+	return nil
 }
 
-func (database *Database) GetRunningEntryId(user string) (string, error) {
-	var runningId string = ""
-
-	dberr := database.DB.View(func(tx *buntdb.Tx) error {
-		value, err := tx.Get(user + ":status:running")
-		if errors.Is(err, buntdb.ErrNotFound) {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		runningId = value
-		return nil
-	})
-
-	return runningId, dberr
+func (db *Database) GetEntry(id int64) (*Entry, error) {
+	query := `SELECT * FROM entries WHERE id = '?';`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var entry *Entry
+	err := db.DB.QueryRowContext(ctx, query, id).Scan(&entry)
+	if err != nil {
+		return nil, err
+	}
+	return entry, nil
 }
 
-func (database *Database) ListEntries(user string) ([]Entry, error) {
+func (db *Database) UpdateEntry(entry Entry) error {
+	query := `UPDATE entries 
+				SET date = '?',
+				SET start = '?',
+				SET finish = '?',
+				SET hours = '?',
+				SET project = '?',
+				SET task = '?',
+				SET notes = '?',
+				SET running = '?'
+			WHERE id = '?';`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	args := []any{entry.Date, entry.Begin, entry.Finish, entry.Hours, entry.Project, entry.Task, entry.Notes, entry.ID}
+	_, err := db.DB.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *Database) AddFinishToEntry(entry Entry) error {
+	query := `UPDATE entries SET finish = '?', SET running = false, WHERE id = '?';`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	args := []any{entry.Finish, entry.ID}
+	_, err := db.DB.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *Database) DeleteEntry(id int64) error {
+	query := `DELETE FROM entries WHERE id = '?';`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	_, err := db.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (db *Database) GetRunningEntry() (*Entry, error) {
+	// We have to make sure that NEVER two entries can be 'running = true'
+	query := `SELECT * FROM entries WHERE running = true;`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var entry *Entry
+	err := db.DB.QueryRowContext(ctx, query).Scan(&entry)
+	if err != nil {
+		return nil, err
+	}
+	return entry, nil
+}
+
+func (db *Database) GetAllEntries() ([]Entry, error) {
+	query := `SELECT * FROM entries;`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		rows.Close()
+		return nil, err
+	}
 	var entries []Entry
-
-	dberr := database.DB.View(func(tx *buntdb.Tx) error {
-		tx.AscendKeys(user+":entry:*", func(key, value string) bool {
-			var entry Entry
-			json.Unmarshal([]byte(value), &entry)
-
-			entry.SetIDFromDatabaseKey(key)
-
-			entries = append(entries, entry)
-			return true
-		})
-
-		return nil
-	})
-
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Begin.Before(entries[j].Begin) })
-	return entries, dberr
-}
-
-func (database *Database) GetImportsSHA1List(user string) (map[string]string, error) {
-	var sha1List = make(map[string]string)
-
-	dberr := database.DB.View(func(tx *buntdb.Tx) error {
-		value, err := tx.Get(user+":imports:sha1", false)
+	for rows.Next() {
+		var entry Entry
+		err := rows.Scan(&entry)
 		if err != nil {
-			return nil
+			return nil, err
 		}
-
-		sha1Entries := strings.Split(value, ",")
-
-		for _, sha1Entry := range sha1Entries {
-			sha1EntrySplit := strings.Split(sha1Entry, ":")
-			sha1 := sha1EntrySplit[0]
-			id := sha1EntrySplit[1]
-			sha1List[sha1] = id
-		}
-
-		return nil
-	})
-
-	return sha1List, dberr
-}
-
-func (database *Database) UpdateImportsSHA1List(user string, sha1List map[string]string) error {
-	var sha1Entries []string
-
-	for sha1, id := range sha1List {
-		sha1Entries = append(sha1Entries, sha1+":"+id)
+		entries = append(entries, entry)
 	}
-
-	value := strings.Join(sha1Entries, ",")
-
-	dberr := database.DB.Update(func(tx *buntdb.Tx) error {
-		_, _, seterr := tx.Set(user+":imports:sha1", value, nil)
-		if seterr != nil {
-			return seterr
-		}
-
-		return nil
-	})
-
-	return dberr
+	return entries, nil
 }
 
-func (database *Database) UpdateProject(user string, projectName string, project Project) error {
-	projectJson, jsonerr := json.Marshal(project)
-	if jsonerr != nil {
-		return jsonerr
+func (db *Database) GetEntriesViaProject(project string) ([]Entry, error) {
+	query := `SELECT * FROM entries WHERE project = '?';`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query, project)
+	if err != nil {
+		rows.Close()
+		return nil, err
 	}
-
-	projectId := GetIdFromName(projectName)
-
-	dberr := database.DB.Update(func(tx *buntdb.Tx) error {
-		_, _, sperr := tx.Set(user+":project:"+projectId, string(projectJson), nil)
-		if sperr != nil {
-			return sperr
-		}
-
-		return nil
-	})
-
-	return dberr
-}
-
-func (database *Database) GetProject(user string, projectName string) (Project, error) {
-	var project Project
-	projectId := GetIdFromName(projectName)
-
-	dberr := database.DB.View(func(tx *buntdb.Tx) error {
-		value, err := tx.Get(user+":project:"+projectId, false)
+	var entries []Entry
+	for rows.Next() {
+		var entry Entry
+		err := rows.Scan(&entry)
 		if err != nil {
-			return nil
+			return nil, err
 		}
-
-		json.Unmarshal([]byte(value), &project)
-
-		return nil
-	})
-
-	return project, dberr
-}
-
-func (database *Database) UpdateTask(user string, taskName string, task Task) error {
-	taskJson, jsonerr := json.Marshal(task)
-	if jsonerr != nil {
-		return jsonerr
+		entries = append(entries, entry)
 	}
-
-	taskId := GetIdFromName(taskName)
-
-	dberr := database.DB.Update(func(tx *buntdb.Tx) error {
-		_, _, sperr := tx.Set(user+":task:"+taskId, string(taskJson), nil)
-		if sperr != nil {
-			return sperr
-		}
-
-		return nil
-	})
-
-	return dberr
+	return entries, nil
 }
 
-func (database *Database) GetTask(user string, taskName string) (Task, error) {
-	var task Task
-	taskId := GetIdFromName(taskName)
-
-	dberr := database.DB.View(func(tx *buntdb.Tx) error {
-		value, err := tx.Get(user+":task:"+taskId, false)
+func (db *Database) GetEntriesBeforeDate(date time.Time) ([]Entry, error) {
+	query := `SELECT * FROM entries WHERE start < '?';`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query, project)
+	if err != nil {
+		rows.Close()
+		return nil, err
+	}
+	var entries []Entry
+	for rows.Next() {
+		var entry Entry
+		err := rows.Scan(&entry)
 		if err != nil {
-			return nil
+			return nil, err
 		}
+		entries = append(entries, entry)
+	}
+	return entries, nil
+}
 
-		json.Unmarshal([]byte(value), &task)
+func (db *Database) GetEntriesAfterDate(date time.Time) ([]Entry, error) {
+	query := `SELECT * FROM entries WHERE start > '?';`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query, project)
+	if err != nil {
+		rows.Close()
+		return nil, err
+	}
+	var entries []Entry
+	for rows.Next() {
+		var entry Entry
+		err := rows.Scan(&entry)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, entry)
+	}
+	return entries, nil
+}
 
-		return nil
-	})
+// It is possible to filter this for projects
+func (db *Database) GetEntriesPerDay(project string) ([]EntriesGroupedByDay, error) {
+	query := `SELECT date, COUNT(DISTINCT(project)), COUNT(DISTINCT(task)), SUM(hours) 
+				FROM entries 
+				WHERE ((project = '?') or '?' = '')
+				GROUP BY date;`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query, project)
+	if err != nil {
+		rows.Close()
+		return nil, err
+	}
+	var EGBY []EntriesGroupedByDay
+	for rows.Next() {
+		var groupedEntry EntriesGroupedByDay
+		err := rows.Scan(&groupedEntry)
+		if err != nil {
+			return nil, err
+		}
+		EGBY = append(EGBY, groupedEntry)
+	}
+	return EGBY, nil
+}
 
-	return task, dberr
+func (db *Database) GetUniqueProjects() ([]string, error) {
+	query := `SELECT DISTINCT(project) FROM entries;`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query, project)
+	if err != nil {
+		rows.Close()
+		return nil, err
+	}
+	var projects []string
+	for rows.Next() {
+		var project string
+		err := rows.Scan(&project)
+		if err != nil {
+			return nil, err
+		}
+		projects = append(projects, project)
+	}
+	return projects, nil
+}
+
+func createDefaultTables(db *sql.DB) error {
+	query := `CREATE TABLE IF NOT EXISTS entries(
+			ID INTEGER PRIMARY KEY AUTOINCREMENT,
+			date  NOT NULL,
+			start TIMESTAMP/DATETIME NOT NULL,
+			finish TIMESTAMP/DATETIME,
+			hours  FLOAT,
+			project TEXT NOT NULL,
+			task   TEXT NOT NULL,
+			notes  TEXT
+			running BOOL);`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	_, err := db.ExecContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	return nil
 }

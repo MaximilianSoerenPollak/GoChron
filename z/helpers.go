@@ -5,7 +5,6 @@ import (
 	"errors"
 	"math"
 	"os/exec"
-	"os/user"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,15 +25,6 @@ func TimeFormats() []string {
 		`^([+-])(\d{1,2}):(\d{1,2})$`,  // Relative hour:minute format
 		`^([+-])(\d{1,2})\.(\d{1,2})$`, // Relative hour.fraction format
 	}
-}
-
-func GetCurrentUser() string {
-	user, err := user.Current()
-	if err != nil {
-		return "unknown"
-	}
-
-	return user.Username
 }
 
 func GetTimeFormat(timeStr string) int {

@@ -37,7 +37,7 @@ var finishCmd = &cobra.Command{
 		if notes != "" {
 			runningEntry.Notes = strings.ReplaceAll(notes, "\\n", "\n")
 		}
-		err = database.UpdateEntry(*runningEntry)
+		err = database.AddFinishToEntry(*runningEntry)
 		if err != nil {
 			fmt.Printf("%s something ent wrong updating the entry. Error: %s", CharError, err.Error())
 			os.Exit(1)

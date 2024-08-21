@@ -1,10 +1,10 @@
 package z
 
 import (
-	"fmt"
-	"github.com/spf13/cobra"
 	"database/sql"
 	"errors"
+	"fmt"
+	"github.com/spf13/cobra"
 	"os"
 )
 
@@ -20,7 +20,7 @@ var trackingCmd = &cobra.Command{
 			case errors.Is(err, sql.ErrNoRows):
 				fmt.Printf("%s No task currently running.", CharFinish)
 				os.Exit(1)
-			default: 
+			default:
 				fmt.Printf("something went wrong getting current runnign entries. Error: %s", err.Error())
 				os.Exit(1)
 			}

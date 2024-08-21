@@ -2,10 +2,12 @@ package z
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gookit/color"
+	"github.com/araddon/dateparse"
 	"github.com/shopspring/decimal"
 )
 
@@ -19,6 +21,51 @@ type Entry struct {
 	Task    string          `json:"task,omitempty"`
 	Notes   string          `json:"notes,omitempty"`
 	Running bool            `json:"-"`
+}
+
+type EntryDB struct { 
+	ID      string 
+	Date    string 
+	Begin   string
+	Finish  string
+	Project string 
+	Hours   string
+	Task    string
+	Notes   string
+	Running bool  
+}
+
+func (edb *EntryDB) ConvertToEntry() (*Entry, error) {
+	entry := Entry{}
+	idParsed, err := strconv.Atoi(edb.ID)
+	if err != nil {
+		return nil, err 
+	}
+	beginParsed, err := dateparse.ParseAny(edb.Begin)
+	if err != nil{
+		return nil, err 
+	}
+	finishParsed, err := dateparse.ParseAny(edb.Finish)
+	if err != nil{
+		return nil, err 
+	
+	}
+	hoursParsed, err := decimal.NewFromString(edb.Hours)
+	if err != nil {
+		return nil, err 
+	}
+	entry.ID = int64(idParsed)
+	entry.Date = edb.Date
+	entry.Begin = beginParsed
+	entry.Finish = finishParsed
+	entry.Project = edb.Project
+	entry.Hours = hoursParsed
+	entry.Task = edb.Task
+	entry.Notes = edb.Notes
+	entry.Running = edb.Running
+	
+	return &entry, nil
+
 }
 
 type EntriesGroupedByDay struct {
@@ -36,6 +83,7 @@ func NewEntry(project string, task string) Entry {
 	newEntry.Task = task
 
 	newEntry.SetBegining()
+	newEntry.SetDateFromBegining()
 	return newEntry
 }
 
@@ -44,7 +92,7 @@ func (entry *Entry) SetDateFromBegining() {
 }
 
 func (entry *Entry) SetBegining() {
-	entry.Begin = time.Now()
+	entry.Begin = time.Now().Truncate(0)
 }
 
 func (entry *Entry) GetOutputStrLong() string {
@@ -67,7 +115,7 @@ func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 	var err error
 
 	if begin == "" {
-		beginTime = time.Now()
+		beginTime = time.Now().Truncate(0)
 	} else {
 		beginTime, err = ParseTime(begin)
 		if err != nil {
@@ -79,7 +127,7 @@ func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 	return beginTime, nil
 }
 func (entry *Entry) SetFinish() {
-	entry.Finish = time.Now()
+	entry.Finish = time.Now().Truncate(0)
 	entry.Running = false
 }
 
@@ -113,7 +161,7 @@ func (entry *Entry) GetOutputForTrack(isRunning bool, wasRunning bool) string {
 	var outputSuffix = ""
 	var outputPrefix = ""
 
-	now := time.Now()
+	now := time.Now().Truncate(0)
 	trackDiffNow := now.Sub(entry.Begin)
 	durationString := fmtDuration(trackDiffNow)
 
@@ -191,7 +239,7 @@ func (entry *Entry) GetOutput(full bool) string {
 	var isRunning = ""
 
 	if entry.Finish.IsZero() {
-		entryFinish = time.Now()
+		entryFinish = time.Now().Truncate(0)
 		isRunning = "[running]"
 	} else {
 		entryFinish = entry.Finish

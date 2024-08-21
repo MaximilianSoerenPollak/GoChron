@@ -78,11 +78,11 @@ func (db *Database) GetEntry(id int64) (*Entry, error) {
 		&entryDB.Notes,
 		&entryDB.Running)
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
-	entry, err := entryDB.ConvertToEntry() 
+	entry, err := entryDB.ConvertToEntry()
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 	return entry, nil
 }
@@ -151,7 +151,7 @@ func (db *Database) GetRunningEntry() (*Entry, error) {
 	}
 	entry, err := entryDB.ConvertToEntry()
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 	return entry, nil
 }
@@ -183,7 +183,7 @@ func (db *Database) GetAllEntries() ([]Entry, error) {
 		}
 		entry, err := entryDB.ConvertToEntry()
 		if err != nil {
-			return nil, err 
+			return nil, err
 		}
 		entries = append(entries, *entry)
 	}
@@ -217,7 +217,7 @@ func (db *Database) GetEntriesViaProject(project string) ([]Entry, error) {
 		}
 		entry, err := entryDB.ConvertToEntry()
 		if err != nil {
-			return nil, err 
+			return nil, err
 		}
 		entries = append(entries, *entry)
 	}
@@ -251,7 +251,7 @@ func (db *Database) GetEntriesBeforeDate(date time.Time) ([]Entry, error) {
 		}
 		entry, err := entryDB.ConvertToEntry()
 		if err != nil {
-			return nil, err 
+			return nil, err
 		}
 		entries = append(entries, *entry)
 	}
@@ -285,7 +285,7 @@ func (db *Database) GetEntriesAfterDate(date time.Time) ([]Entry, error) {
 		}
 		entry, err := entryDB.ConvertToEntry()
 		if err != nil {
-			return nil, err 
+			return nil, err
 		}
 		entries = append(entries, *entry)
 	}

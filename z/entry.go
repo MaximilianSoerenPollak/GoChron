@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gookit/color"
 	"github.com/araddon/dateparse"
+	"github.com/gookit/color"
 	"github.com/shopspring/decimal"
 )
 
@@ -23,36 +23,36 @@ type Entry struct {
 	Running bool            `json:"-"`
 }
 
-type EntryDB struct { 
-	ID      string 
-	Date    string 
+type EntryDB struct {
+	ID      string
+	Date    string
 	Begin   string
 	Finish  string
-	Project string 
+	Project string
 	Hours   string
 	Task    string
 	Notes   string
-	Running bool  
+	Running bool
 }
 
 func (edb *EntryDB) ConvertToEntry() (*Entry, error) {
 	entry := Entry{}
 	idParsed, err := strconv.Atoi(edb.ID)
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 	beginParsed, err := dateparse.ParseAny(edb.Begin)
-	if err != nil{
-		return nil, err 
+	if err != nil {
+		return nil, err
 	}
 	finishParsed, err := dateparse.ParseAny(edb.Finish)
-	if err != nil{
-		return nil, err 
-	
+	if err != nil {
+		return nil, err
+
 	}
 	hoursParsed, err := decimal.NewFromString(edb.Hours)
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 	entry.ID = int64(idParsed)
 	entry.Date = edb.Date
@@ -63,7 +63,7 @@ func (edb *EntryDB) ConvertToEntry() (*Entry, error) {
 	entry.Task = edb.Task
 	entry.Notes = edb.Notes
 	entry.Running = edb.Running
-	
+
 	return &entry, nil
 
 }

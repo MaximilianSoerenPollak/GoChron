@@ -25,14 +25,14 @@ var trackCmd = &cobra.Command{
 			}
 		}
 		if entry != nil {
-			fmt.Printf("A task is already running, you have to finish this one first before you start a new one")
+			fmt.Printf("%s A task is already running, you have to finish it first before you start a new one.\n\nType 'zeit finish' to do so.", CharError)
 			os.Exit(1)
 		}
 		if task == "" {
-			fmt.Printf("Can not track empty task. Please assign a task via --task to track")
+			fmt.Printf("%s Can not track empty task.\nPlease assign a task via --task to track\n", CharError)
 		}
 		if project == "" {
-			fmt.Printf("You have to add a project (via --project) to which this task should be assigned too")
+			fmt.Printf("%s Can not track empty project.\nPlease assign a project via --project\n", CharError)
 			os.Exit(1)
 		}
 		newEntry := NewEntry(project, task)

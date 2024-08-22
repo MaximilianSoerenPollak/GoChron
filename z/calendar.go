@@ -47,7 +47,7 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 	projectHexColors := []string{"#6E8894", "#CEEDDB", "#4097C4", "#5E2595"}
 	projects, err := database.GetUniqueProjects()
 	if err != nil {
-		fmt.Errorf("could not get all unique projects. Error: %s", err.Error())
+		fmt.Printf("could not get all unique projects. Error: %s", err.Error())
 		os.Exit(1)
 	}
 	for i, v := range projects {
@@ -61,7 +61,7 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 		nextDayHours := decimal.NewFromInt(0)
 
 		if entry.Finish.IsZero() {
-			entryFinish = time.Now()
+			entryFinish = time.Now().Truncate(0)
 		} else {
 			entryFinish = entry.Finish
 		}

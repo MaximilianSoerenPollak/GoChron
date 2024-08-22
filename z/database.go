@@ -88,7 +88,7 @@ func (db *Database) GetEntry(id int64) (*Entry, error) {
 }
 
 func (db *Database) UpdateEntry(entry Entry) error {
-	args := []any{entry.Date, entry.Begin, entry.Finish, entry.Hours, entry.Project, entry.Task, entry.Notes, entry.ID}
+	args := []any{entry.Date, entry.Begin.String(), entry.Finish.String(), entry.Hours.String(), entry.Project, entry.Task, entry.Notes, entry.Running, entry.ID}
 	query := fmt.Sprintf(`UPDATE entries 
 				SET date = '%s',
 					start = '%s',
@@ -97,8 +97,8 @@ func (db *Database) UpdateEntry(entry Entry) error {
 					project = '%s',
 					task = '%s',
 					notes = '%s',
-					running = '%s'
-			WHERE id = '%s';`, args...)
+					running = %t
+			WHERE id = %d;`, args...)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_, err := db.DB.ExecContext(ctx, query)

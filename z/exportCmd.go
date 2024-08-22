@@ -22,7 +22,18 @@ func exportZeitJson(entries []Entry) (string, error) {
 
 func exportCSV(entries []Entry) error {
 	// TODO: There has to be a nicer way to write this, for now this is okay.
-	f, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	if fileName == "" {
+		fileName = fmt.Sprintf("zeit-output-%s.csv", time.Now().Truncate(0).Format(time.DateOnly))
+		fmt.Printf("%s No file-name provided. Using '%s' as default.\n\n", CharInfo, fileName)
+	} else {
+		fmt.Printf("%s Using file-name: '%s'.\n\n", CharInfo, fileName)
+	}	
+	_, err := os.Open(fileName)
+	if err == nil {
+		fmt.Printf("%s file with name '%s' already exists.\nPlease choose a different filename, or delete the file if no longer needed", CharError, fileName)
+		os.Exit(1)
+	}
+	f, err := os.OpenFile(fileName, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return err
 	}
@@ -112,7 +123,6 @@ var exportCmd = &cobra.Command{
 			// Reasignment here so we don't need to check other flags later
 			filteredEntries = addedInformationEntries
 		}
-		// sortedEntries, err := SortEntries(filteredEntries, user, sorting)
 		if err != nil {
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
@@ -125,6 +135,7 @@ var exportCmd = &cobra.Command{
 				fmt.Printf("%s %+v\n", CharError, err)
 				os.Exit(1)
 			}
+			fmt.Printf("%s export finished.\n", CharFinish)
 		case "zeit":
 			output, err = exportZeitJson(filteredEntries)
 			if err != nil {
@@ -142,15 +153,14 @@ var exportCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(exportCmd)
-	exportCmd.Flags().StringVar(&format, "format", "zeit", "Format to export, possible values: zeit, tyme, csv")
+	exportCmd.Flags().StringVar(&format, "format", "zeit", "Format to export, possible values: zeit, csv")
 	exportCmd.Flags().StringVar(&since, "since", "", "Date/time to start the export from")
 	exportCmd.Flags().StringVar(&until, "until", "", "Date/time to export until")
 	exportCmd.Flags().StringVarP(&project, "project", "p", "", "Project to be exported")
 	exportCmd.Flags().StringVarP(&task, "task", "t", "", "Task to be exported")
 	exportCmd.Flags().BoolVar(&exportDate, "date", true, "Set to true, if you want to export the 'Date' aswell")
-	exportCmd.Flags().BoolVar(&exportHours, "hours-decimal", true, "Set to true if you want calculated Hours to be exported too")
+	exportCmd.Flags().BoolVar(&exportHours, "hours-decimal", true, "Set to true if you want Hours to be exported too")
 	exportCmd.Flags().StringVar(&fileName, "file-name", "", "Set the output file for the csv export")
-	exportCmd.Flags().StringVar(&sorting, "sorting", "time", "Set the sorting way, on how we want the tasks sorted.")
 	exportCmd.Flags().BoolVar(&exportAllFields, "export-all-fields", false, "Set to true if you want to export all the available fields to the csv")
 	var err error
 	database, err = InitDB()

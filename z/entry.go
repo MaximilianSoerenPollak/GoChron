@@ -101,7 +101,7 @@ func (entry *Entry) GetOutputStrLong() string {
 }
 
 func (entry *Entry) GetOutputStrShort() string {
-	return fmt.Sprintf(`Task: %s Project: %s Dated: %s Hours: %s `,
+	return fmt.Sprintf(`Task: %s | Project: %s |  Dated: %s | Hours: %s `,
 		entry.Task, entry.Project, entry.Date, entry.Hours.String())
 }
 
@@ -253,8 +253,8 @@ func (entry *Entry) GetOutput(full bool) string {
 			color.FgGray.Render(entry.ID),
 			color.FgLightWhite.Render(entry.Task),
 			color.FgLightWhite.Render(entry.Project),
-			color.FgLightWhite.Render(entry.Begin.Format("2006-01-02 15:04 -0700")),
-			color.FgLightWhite.Render(entryFinish.Format("2006-01-02 15:04 -0700")),
+			color.FgLightWhite.Render(entry.Begin.Format("2006-01-02 15:04")),
+			color.FgLightWhite.Render(entryFinish.Format("2006-01-02 15:04")),
 			color.FgLightWhite.Render(taskDuration),
 			color.FgLightYellow.Render(isRunning),
 		)
@@ -264,8 +264,8 @@ func (entry *Entry) GetOutput(full bool) string {
 			color.FgLightWhite.Render(entry.Task),
 			color.FgLightWhite.Render(entry.Project),
 			color.FgLightWhite.Render(taskDuration),
-			color.FgLightWhite.Render(entry.Begin.Format("2006-01-02 15:04 -0700")),
-			color.FgLightWhite.Render(entryFinish.Format("2006-01-02 15:04 -0700")),
+			color.FgLightWhite.Render(entry.Begin.Format("2006-01-02 15:04")),
+			color.FgLightWhite.Render(entryFinish.Format("2006-01-02 15:04")),
 			color.FgLightYellow.Render(isRunning),
 			color.FgLightWhite.Render(strings.Replace(entry.Notes, "\n", "\n   ", -1)),
 		)

@@ -26,7 +26,6 @@ var listCmd = &cobra.Command{
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
 		}
-		fmt.Printf("These are the entries: %+v\n", entries)
 
 		var sinceTime time.Time
 		var untilTime time.Time

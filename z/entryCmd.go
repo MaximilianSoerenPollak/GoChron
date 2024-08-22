@@ -54,7 +54,7 @@ var entryCmd = &cobra.Command{
 		}
 
 		if notes != "" {
-			entry.Notes = strings.Replace(notes, "\\n", "\n", -1)
+			entry.Notes = strings.ReplaceAll(notes, "\\n", "\n")
 		}
 
 		err = database.UpdateEntry(*entry)

@@ -36,7 +36,7 @@ func InitDB() (*Database, error) {
 	return &Database{DB: db}, nil
 }
 
-func (db *Database) AddEntry(entry *Entry) error {
+func (db *Database) AddEntry(entry *Entry, running bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	args := []any{
@@ -46,9 +46,10 @@ func (db *Database) AddEntry(entry *Entry) error {
 		entry.Hours.String(),
 		entry.Project,
 		entry.Task,
-		entry.Notes}
+		entry.Notes,
+		running}
 	query := fmt.Sprintf(`INSERT INTO entries(date, start, finish, hours, project, task, notes, running) 
-		VALUES('%s','%s','%s','%s','%s','%s','%s', true);`, args...)
+		VALUES('%s','%s','%s','%s','%s','%s','%s', '%t');`, args...)
 	result, err := db.DB.ExecContext(ctx, query)
 	if err != nil {
 		return err

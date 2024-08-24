@@ -39,7 +39,7 @@ var trackCmd = &cobra.Command{
 		if notes != "" {
 			newEntry.Notes = notes
 		}
-		err = database.AddEntry(&newEntry)
+		err = database.AddEntry(&newEntry, true)
 		if err != nil {
 			fmt.Printf("something went wrong. Error: %s", err.Error())
 			os.Exit(1)

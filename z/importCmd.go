@@ -51,7 +51,7 @@ For the 'csv' output, please make sure you export all the fields.`,
 					fmt.Printf("%s Could not convert entryDB '%+v' to entry. Error: %s\n", CharError, v, err.Error())
 					os.Exit(1)
 				}
-				err = database.AddEntry(entryConv)
+				err = database.AddEntry(entryConv, false)
 				if err != nil {
 					fmt.Printf("%s Could not add entry '%+v' to the database. Error: %s\n", CharError, entryConv, err.Error())
 					os.Exit(1)
@@ -98,7 +98,7 @@ For the 'csv' output, please make sure you export all the fields.`,
 					fmt.Printf("%s Could not convert entryDB '%+v' to entry. Error: %s\n", CharError, eDB, err.Error())
 					os.Exit(1)
 				}
-				err = database.AddEntry(entryConv)
+				err = database.AddEntry(entryConv, false)
 				if err != nil {
 					fmt.Printf("%s Could not add entry '%+v' to the database. Error: %s\n", CharError, entryConv, err.Error())
 					os.Exit(1)

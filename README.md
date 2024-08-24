@@ -5,34 +5,53 @@ This is a fork of the 'zeit' repo which can be found [here](https://github.com/m
 
 Much thanks to Mrusme for his work and for making it available to the public.   
 I have decided to fork it as I wanted to have some additions and be able to use this accorss different PC's.  
-Sadly my setup even with changes did not work with the requiered '.editorconfig'.   
-So I couldn't contribute upstream.  
-I will keep the Fork here to track my own additions if I make any more.
-[Jump to the original project README](#ZEIT)
+Sadly my setup even with changes did not work with the requiered '.editorconfig',so I couldn't contribute upstream. 
+
+> **[Jump to the original project](https://github.com/mrusme/zeit)**
+
+--- 
+---
 
 Table of contents: 
 
+- [What?](#What-is-this)
 - [Changes to know](#changes-to-know)
 - [How to build/install](#building)
 - [What is new](#New-additions)
 - [Issues](#Issues)
 
+## What is this?
+
+This project is a `cli` that allows you to track how much time you spend on a given task on a given project.
+You can export the statistics to a CSV, display them in the Terminal via a nice statistics screen, or just list them out.
+
+<insert picture of good screenshot>
 
 ## Changes to know
 
-I just realeased the `v0.1.0`, you can head over there to read about the changes too. 
-[Read the release](https://github.com/MaximilianSoerenPollak/zeit/releases/tag/v.0.1.0)
+I just realeased the `v0.2.0`, you can head over there to read about the changes too. 
+[Read the release](https://github.com/MaximilianSoerenPollak/zeit/releases/tag/v.0.2.0)
 
 Here are some changes I have made to my fork, that you should be aware of if you use this one.  
+
+#### V0.2.0 Changes 
+- Change to SQLITE3 Database 
+- Remove 'tyme' completely (from import & export)
+- Removed some commands to streamline the Process 
+- Added 'colors' to the 'stats' page. 
+- Removed Git/hub linking feature 
+
+#### V0.1.0 Changes
 - Removed 'extras' as I had no need for them 
 - Changed Go Version to 1.22.3 (to make use of new Bugfixes etc.)
 - Implemented standard 'GoFmt' formatting 
 - Changed 'default' arguments for exporting and added options to it.
 
+
 ### Building
 You can build the project by using the 'makefile' or by just using go itself. 
 ```sh
-make VERSION=0.1.0 # to make the newest version.
+make VERSION=0.2.0 # to make the newest version.
 ```
 or via go 
 ```sh 
@@ -44,6 +63,7 @@ If you rather would just the user have execute this binary you can also make a `
 `export PATH="$PATH:/usr/local/bin"`
 
 ###  New additions
+
 
 #### Export to CSV 
 I have added the option to allow `zeit` to also export to 'csv'. Currently it will use `;` as a seperator
@@ -74,6 +94,9 @@ For now this only does something when you specified `--format "csv"` but this wi
 If you find issues or bugs, by all means please open an issue with a description and I will take a look at it as soon as I can. 
 
 ---
+---
+# ORIGINAL README FROM THE FORKED PROJECT
+
 ---
 
 ZEIT

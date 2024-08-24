@@ -5,7 +5,6 @@ import (
 	"errors"
 	"math"
 	"os/exec"
-	"os/user"
 	"regexp"
 	"strconv"
 	"strings"
@@ -26,15 +25,6 @@ func TimeFormats() []string {
 		`^([+-])(\d{1,2}):(\d{1,2})$`,  // Relative hour:minute format
 		`^([+-])(\d{1,2})\.(\d{1,2})$`, // Relative hour.fraction format
 	}
-}
-
-func GetCurrentUser() string {
-	user, err := user.Current()
-	if err != nil {
-		return "unknown"
-	}
-
-	return user.Username
 }
 
 func GetTimeFormat(timeStr string) int {
@@ -61,7 +51,7 @@ func RelToTime(timeStr string, ftId int) (time.Time, error) {
 	gm := re.FindStringSubmatch(timeStr)
 
 	if len(gm) < 4 {
-		return time.Now(), errors.New("no match")
+		return time.Now().Truncate(0), errors.New("no match")
 	}
 
 	var hours = 0
@@ -79,9 +69,9 @@ func RelToTime(timeStr string, ftId int) (time.Time, error) {
 
 	switch gm[1] {
 	case "+":
-		t = time.Now().Local().Add(time.Hour*time.Duration(hours) + time.Minute*time.Duration(minutes))
+		t = time.Now().Truncate(0).Local().Add(time.Hour*time.Duration(hours) + time.Minute*time.Duration(minutes))
 	case "-":
-		t = time.Now().Local().Add((time.Hour*time.Duration(hours) + time.Minute*time.Duration(minutes)) * -1)
+		t = time.Now().Truncate(0).Local().Add((time.Hour*time.Duration(hours) + time.Minute*time.Duration(minutes)) * -1)
 	}
 
 	return t, nil
@@ -90,7 +80,7 @@ func RelToTime(timeStr string, ftId int) (time.Time, error) {
 func ParseTime(timeStr string) (time.Time, error) {
 	tfId := GetTimeFormat(timeStr)
 
-	t := time.Now()
+	t := time.Now().Truncate(0)
 
 	switch tfId {
 	case TFAbsTwelveHour:

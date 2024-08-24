@@ -1,75 +1,113 @@
 package z
 
 import (
-	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/araddon/dateparse"
 	"github.com/gookit/color"
 	"github.com/shopspring/decimal"
 )
 
 type Entry struct {
-	ID      string    `json:"-"`
-	Date    string    `json:"date,omitempty"`
-	Begin   time.Time `json:"begin,omitempty"`
-	Finish  time.Time `json:"finish,omitempty"`
-	Project string    `json:"project,omitempty"`
-	Hours   string    `json:"hours,omitempty"`
-	Task    string    `json:"task,omitempty"`
-	Notes   string    `json:"notes,omitempty"`
-	User    string    `json:"-"`
-
-	SHA1 string `json:"-"`
+	ID      int64           `json:"-"`
+	Date    string          `json:"date,omitempty"`
+	Begin   time.Time       `json:"begin,omitempty"`
+	Finish  time.Time       `json:"finish,omitempty"`
+	Project string          `json:"project,omitempty"`
+	Hours   decimal.Decimal `json:"hours,omitempty"`
+	Task    string          `json:"task,omitempty"`
+	Notes   string          `json:"notes,omitempty"`
+	Running bool            `json:"-"`
 }
 
-func NewEntry(
-	id string,
-	begin string,
-	finish string,
-	project string,
-	task string,
-	user string) (Entry, error) {
-	var err error
+type EntryDB struct {
+	ID      string
+	Date    string
+	Begin   string
+	Finish  string
+	Project string
+	Hours   string
+	Task    string
+	Notes   string
+	Running bool
+}
+
+func (edb *EntryDB) ConvertToEntry() (*Entry, error) {
+	entry := Entry{}
+	idParsed, err := strconv.Atoi(edb.ID)
+	if err != nil {
+		return nil, err
+	}
+	beginParsed, err := dateparse.ParseAny(edb.Begin)
+	if err != nil {
+		return nil, err
+	}
+	finishParsed, err := dateparse.ParseAny(edb.Finish)
+	if err != nil {
+		return nil, err
+
+	}
+	hoursParsed, err := decimal.NewFromString(edb.Hours)
+	if err != nil {
+		return nil, err
+	}
+	entry.ID = int64(idParsed)
+	entry.Date = edb.Date
+	entry.Begin = beginParsed
+	entry.Finish = finishParsed
+	entry.Project = edb.Project
+	entry.Hours = hoursParsed
+	entry.Task = edb.Task
+	entry.Notes = edb.Notes
+	entry.Running = edb.Running
+
+	return &entry, nil
+
+}
+
+type EntriesGroupedByDay struct {
+	Date     string
+	Projects int8
+	Tasks    int8
+	Hours    decimal.Decimal
+}
+
+func NewEntry(project string, task string) Entry {
 
 	newEntry := Entry{}
 
-	newEntry.ID = id
 	newEntry.Project = project
 	newEntry.Task = task
-	newEntry.User = user
 
-	_, err = newEntry.SetBeginFromString(begin)
-	if err != nil {
-		return Entry{}, err
-	}
-
-	_, err = newEntry.SetFinishFromString(finish)
-	if err != nil {
-		return Entry{}, err
-	}
-
-	if id == "" && !newEntry.IsFinishedAfterBegan() {
-		return Entry{}, errors.New("beginning time of tracking cannot be after finish time")
-	}
-
-	return newEntry, nil
-}
-
-func (entry *Entry) SetIDFromDatabaseKey(key string) error {
-	splitKey := strings.Split(key, ":")
-
-	if len(splitKey) < 3 || len(splitKey) > 3 {
-		return errors.New("not a valid database key")
-	}
-
-	entry.ID = splitKey[2]
-	return nil
+	newEntry.SetBegining()
+	newEntry.SetDateFromBegining()
+	return newEntry
 }
 
 func (entry *Entry) SetDateFromBegining() {
 	entry.Date = entry.Begin.Format("02-01-2006")
+}
+
+func (entry *Entry) SetBegining() {
+	entry.Begin = time.Now().Truncate(0)
+}
+
+func (entry *Entry) GetOutputStrLong() string {
+	return fmt.Sprintf(`Task: %s on Project: %s started at: %s finished at: %s and in total has %s hours`,
+		entry.Task, entry.Project, entry.Begin.String(), entry.Finish.String(), entry.Hours.String())
+}
+
+func (entry *Entry) GetOutputStrShort() string {
+	return fmt.Sprintf(`Task: %s | Project: %s |  Dated: %s | Hours: %s `,
+		entry.Task, entry.Project, entry.Date, entry.Hours.String())
+}
+
+func (entry *Entry) GetStartTrackingStr() string {
+	return fmt.Sprintf(`Started tracking --> Task: %s on Project: %s `,
+		entry.Task, entry.Project)
 }
 
 func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
@@ -77,7 +115,7 @@ func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 	var err error
 
 	if begin == "" {
-		beginTime = time.Now()
+		beginTime = time.Now().Truncate(0)
 	} else {
 		beginTime, err = ParseTime(begin)
 		if err != nil {
@@ -87,6 +125,10 @@ func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 
 	entry.Begin = beginTime
 	return beginTime, nil
+}
+func (entry *Entry) SetFinish() {
+	entry.Finish = time.Now().Truncate(0)
+	entry.Running = false
 }
 
 func (entry *Entry) SetFinishFromString(finish string) (time.Time, error) {
@@ -104,12 +146,11 @@ func (entry *Entry) SetFinishFromString(finish string) (time.Time, error) {
 	return finishTime, nil
 }
 
-
-func (entry *Entry) GetCSVHeaderAllData() []string { 
-	return []string{"date", "begin", "finish", "project", "task", "hours", "notes"}	
+func (entry *Entry) GetCSVHeaderAllData() []string {
+	return []string{"date", "begin", "finish", "project", "task", "hours", "notes"}
 }
-func (entry *Entry) GetCSVHeaderShortData() []string { 
-	return []string{"date", "project", "task", "hours"}	
+func (entry *Entry) GetCSVHeaderShortData() []string {
+	return []string{"date", "project", "task", "hours"}
 }
 
 func (entry *Entry) IsFinishedAfterBegan() bool {
@@ -120,7 +161,7 @@ func (entry *Entry) GetOutputForTrack(isRunning bool, wasRunning bool) string {
 	var outputSuffix = ""
 	var outputPrefix = ""
 
-	now := time.Now()
+	now := time.Now().Truncate(0)
 	trackDiffNow := now.Sub(entry.Begin)
 	durationString := fmtDuration(trackDiffNow)
 
@@ -154,22 +195,22 @@ func (entry *Entry) GetDuration() decimal.Decimal {
 
 func (entry *Entry) ConvertToCSVAllData() []string {
 	return []string{
-		entry.Date, 
-		entry.Begin.String(), 
-		entry.Finish.String(), 
+		entry.Date,
+		entry.Begin.String(),
+		entry.Finish.String(),
 		entry.Project,
 		entry.Task,
-		entry.Hours,
+		entry.Hours.String(),
 		entry.Notes,
 	}
 }
 
 func (entry *Entry) ConvertToCSVShortData() []string {
 	return []string{
-		entry.Date, 
+		entry.Date,
 		entry.Project,
 		entry.Task,
-		entry.Hours,
+		entry.Hours.String(),
 	}
 }
 
@@ -198,7 +239,7 @@ func (entry *Entry) GetOutput(full bool) string {
 	var isRunning = ""
 
 	if entry.Finish.IsZero() {
-		entryFinish = time.Now()
+		entryFinish = time.Now().Truncate(0)
 		isRunning = "[running]"
 	} else {
 		entryFinish = entry.Finish
@@ -212,8 +253,8 @@ func (entry *Entry) GetOutput(full bool) string {
 			color.FgGray.Render(entry.ID),
 			color.FgLightWhite.Render(entry.Task),
 			color.FgLightWhite.Render(entry.Project),
-			color.FgLightWhite.Render(entry.Begin.Format("2006-01-02 15:04 -0700")),
-			color.FgLightWhite.Render(entryFinish.Format("2006-01-02 15:04 -0700")),
+			color.FgLightWhite.Render(entry.Begin.Format("2006-01-02 15:04")),
+			color.FgLightWhite.Render(entryFinish.Format("2006-01-02 15:04")),
 			color.FgLightWhite.Render(taskDuration),
 			color.FgLightYellow.Render(isRunning),
 		)
@@ -223,8 +264,8 @@ func (entry *Entry) GetOutput(full bool) string {
 			color.FgLightWhite.Render(entry.Task),
 			color.FgLightWhite.Render(entry.Project),
 			color.FgLightWhite.Render(taskDuration),
-			color.FgLightWhite.Render(entry.Begin.Format("2006-01-02 15:04 -0700")),
-			color.FgLightWhite.Render(entryFinish.Format("2006-01-02 15:04 -0700")),
+			color.FgLightWhite.Render(entry.Begin.Format("2006-01-02 15:04")),
+			color.FgLightWhite.Render(entryFinish.Format("2006-01-02 15:04")),
 			color.FgLightYellow.Render(isRunning),
 			color.FgLightWhite.Render(strings.Replace(entry.Notes, "\n", "\n   ", -1)),
 		)
@@ -258,3 +299,33 @@ func GetFilteredEntries(entries []Entry, project string, task string, since time
 
 	return filteredEntries, nil
 }
+
+// func SortEntries(entries []Entry, user, sortingType string) ([]Entry, error) {
+// 	fmt.Printf("These are the incoming entries: \n %v\n", entries)
+// 	switch sortingType {
+// 	case "chronological":
+// 		sort.Slice(entries, func(i, j int) bool {
+// 			return entries[i].Begin.After(entries[j].Begin)
+// 		})
+// 	case "hours":
+// 		sort.Slice(entries, func(i, j int) bool {
+// 			iInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
+// 			if err != nil {
+// 				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
+// 			}
+// 			jInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
+// 			decimal.NewFromString(entries[i].Hours.String())
+// 			if err != nil {
+// 				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
+// 			}
+// 			return iInt > jInt
+// 		})
+// 	case "time":
+// 		sort.Slice(entries, func(i, j int) bool {
+// 			return entries[i].Begin.After(entries[j].Begin)
+// 		})
+// 	}
+//
+// 	fmt.Printf("These are the outgoing entries: \n %v", entries)
+// 	return entries, nil
+// }

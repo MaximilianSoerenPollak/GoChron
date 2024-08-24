@@ -2,6 +2,7 @@ package z
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -22,6 +23,8 @@ type Week struct {
 	Statistics WeekStatistics
 }
 
+type hexcolor string
+
 type Month struct {
 	Name  string
 	Weeks [5]Week
@@ -38,7 +41,18 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 
 	cal.Distribution = make(map[string]Statistic)
 
-	projects := make(map[string]Project)
+	// We want to color the projects in rotation I guess?
+	// I want to have like 4 different colors and then rotate through those
+	projectsColor := make(map[string]string)
+	projectHexColors := []string{"#6E8894", "#CEEDDB", "#4097C4", "#5E2595"}
+	projects, err := database.GetUniqueProjects()
+	if err != nil {
+		fmt.Printf("could not get all unique projects. Error: %s", err.Error())
+		os.Exit(1)
+	}
+	for i, v := range projects {
+		projectsColor[v] = projectHexColors[i%4]
+	}
 
 	for _, entry := range entries {
 		var entryFinish time.Time
@@ -46,19 +60,8 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 		sameDayHours := decimal.NewFromInt(0)
 		nextDayHours := decimal.NewFromInt(0)
 
-		projectId := GetIdFromName(entry.Project)
-
-		if projects[projectId].Name == "" {
-			project, err := database.GetProject(entry.User, entry.Project)
-			if err != nil {
-				return cal, err
-			}
-
-			projects[projectId] = project
-		}
-
 		if entry.Finish.IsZero() {
-			entryFinish = time.Now()
+			entryFinish = time.Now().Truncate(0)
 		} else {
 			entryFinish = entry.Finish
 		}
@@ -94,7 +97,7 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 			stat := Statistic{
 				Hours:   sameDayHours,
 				Project: entry.Project,
-				Color:   GetColorFnFromHex(projects[projectId].Color),
+				Color:   GetColorFnFromHex(projectsColor[entry.Project]),
 			}
 
 			if cal.Months[month0].Weeks[weeknumber0].Statistics == nil {
@@ -114,7 +117,7 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 			stat := Statistic{
 				Hours:   nextDayHours,
 				Project: entry.Project,
-				Color:   GetColorFnFromHex(projects[projectId].Color),
+				Color:   GetColorFnFromHex(projectsColor[entry.Project]),
 			}
 
 			if cal.Months[month0].Weeks[weeknumber0].Statistics == nil {
@@ -128,7 +131,7 @@ func NewCalendar(entries []Entry) (Calendar, error) {
 		dist.Project = entry.Project
 		dist.Hours = dist.Hours.Add(sameDayHours)
 		dist.Hours = dist.Hours.Add(nextDayHours)
-		dist.Color = GetColorFnFromHex(projects[projectId].Color)
+		dist.Color = GetColorFnFromHex(projectsColor[entry.Project])
 		cal.Distribution[entry.Project] = dist
 
 		// fmt.Printf("Same Day: %s \n Next Day: %s \n Project Hours: %s\n", sameDayHours.String(), nextDayHours.String(), dist.Hours.String())

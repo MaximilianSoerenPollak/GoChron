@@ -3,6 +3,7 @@ package z
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/araddon/dateparse"
@@ -15,51 +16,52 @@ var entryCmd = &cobra.Command{
 	Long:  "Display or update tracked activity.",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		user := GetCurrentUser()
-		id := args[0]
+		idStr := args[0]
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			fmt.Printf("%s %s", CharError, "Please provide a valid number")
+			os.Exit(1)
+		}
 
-		entry, err := database.GetEntry(user, id)
+		entry, err := database.GetEntry(int64(id))
 		if err != nil {
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
 		}
 
-		if begin != "" || finish != "" || project != "" || notes != "" || task != "" {
-			if begin != "" {
-				entry.Begin, err = dateparse.ParseAny(begin)
-				if err != nil {
-					fmt.Printf("%s %+v\n", CharError, err)
-					os.Exit(1)
-				}
-			}
-
-			if finish != "" {
-				entry.Finish, err = dateparse.ParseAny(finish)
-				if err != nil {
-					fmt.Printf("%s %+v\n", CharError, err)
-					os.Exit(1)
-				}
-			}
-
-			if project != "" {
-				entry.Project = project
-			}
-
-			if task != "" {
-				entry.Task = task
-			}
-
-			if notes != "" {
-				entry.Notes = strings.Replace(notes, "\\n", "\n", -1)
-			}
-
-			_, err = database.UpdateEntry(user, entry)
+		if begin != "" {
+			entry.Begin, err = dateparse.ParseAny(begin)
 			if err != nil {
 				fmt.Printf("%s %+v\n", CharError, err)
 				os.Exit(1)
 			}
 		}
 
+		if finish != "" {
+			entry.Finish, err = dateparse.ParseAny(finish)
+			if err != nil {
+				fmt.Printf("%s %+v\n", CharError, err)
+				os.Exit(1)
+			}
+		}
+
+		if project != "" {
+			entry.Project = project
+		}
+
+		if task != "" {
+			entry.Task = task
+		}
+
+		if notes != "" {
+			entry.Notes = strings.ReplaceAll(notes, "\\n", "\n")
+		}
+
+		err = database.UpdateEntry(*entry)
+		if err != nil {
+			fmt.Printf("%s %+v\n", CharError, err)
+			os.Exit(1)
+		}
 		fmt.Printf("%s %s\n", CharInfo, entry.GetOutput(true))
 		return
 	},
@@ -75,7 +77,7 @@ func init() {
 	entryCmd.Flags().BoolVar(&fractional, "decimal", false, "Show fractional hours in decimal format instead of minutes")
 
 	var err error
-	database, err = InitDatabase()
+	database, err = InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)

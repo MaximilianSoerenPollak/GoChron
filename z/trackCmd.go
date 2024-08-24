@@ -1,6 +1,8 @@
 package z
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
 	"os"
@@ -11,39 +13,39 @@ var trackCmd = &cobra.Command{
 	Short: "Tracking time",
 	Long:  "Track new activity, which can either be kept running until 'finish' is being called or parameterized to be a finished activity.",
 	Run: func(cmd *cobra.Command, args []string) {
-		user := GetCurrentUser()
 
-		runningEntryId, err := database.GetRunningEntryId(user)
+		entry, err := database.GetRunningEntry()
 		if err != nil {
-			fmt.Printf("%s %+v\n", CharError, err)
+			switch {
+			case errors.Is(err, sql.ErrNoRows):
+				//ignore this, as there are no tasks running, which is what we want.
+			default:
+				fmt.Printf("%s %+v\n", CharError, err)
+				os.Exit(1)
+			}
+		}
+		if entry != nil {
+			fmt.Printf("%s A task is already running, you have to finish it first before you start a new one.\n\nType 'zeit finish' to do so.", CharError)
 			os.Exit(1)
 		}
-
-		if runningEntryId != "" {
-			fmt.Printf("%s a task is already running\n", CharTrack)
+		if task == "" {
+			fmt.Printf("%s Can not track empty task.\nPlease assign a task via --task to track\n", CharError)
+		}
+		if project == "" {
+			fmt.Printf("%s Can not track empty project.\nPlease assign a project via --project\n", CharError)
 			os.Exit(1)
 		}
-
-		newEntry, err := NewEntry("", begin, finish, project, task, user)
-		if err != nil {
-			fmt.Printf("%s %+v\n", CharError, err)
-			os.Exit(1)
-		}
-
+		newEntry := NewEntry(project, task)
 		if notes != "" {
 			newEntry.Notes = notes
 		}
-
-		isRunning := newEntry.Finish.IsZero()
-
-		_, err = database.AddEntry(user, newEntry, isRunning)
+		err = database.AddEntry(&newEntry)
 		if err != nil {
-			fmt.Printf("%s %+v\n", CharError, err)
+			fmt.Printf("something went wrong. Error: %s", err.Error())
 			os.Exit(1)
 		}
 
-		fmt.Printf(newEntry.GetOutputForTrack(isRunning, false))
-		return
+		fmt.Print(newEntry.GetStartTrackingStr())
 	},
 }
 
@@ -54,10 +56,9 @@ func init() {
 	trackCmd.Flags().StringVarP(&project, "project", "p", "", "Project to be assigned")
 	trackCmd.Flags().StringVarP(&task, "task", "t", "", "Task to be assigned")
 	trackCmd.Flags().StringVarP(&notes, "notes", "n", "", "Activity notes")
-	trackCmd.Flags().BoolVarP(&force, "force", "f", false, "Force begin tracking of a new task \neven though another one is still running \n(ONLY IF YOU KNOW WHAT YOU'RE DOING!)")
 
 	var err error
-	database, err = InitDatabase()
+	database, err = InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)

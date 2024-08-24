@@ -20,9 +20,8 @@ var listCmd = &cobra.Command{
 	Short: "List activities",
 	Long:  "List all tracked activities.",
 	Run: func(cmd *cobra.Command, args []string) {
-		user := GetCurrentUser()
 
-		entries, err := database.ListEntries(user)
+		entries, err := database.GetAllEntries()
 		if err != nil {
 			fmt.Printf("%s %+v\n", CharError, err)
 			os.Exit(1)
@@ -115,7 +114,7 @@ func init() {
 	listCmd.Flags().BoolVar(&appendProjectIDToTask, "append-project-id-to-task", false, "Append project ID to tasks in the list")
 
 	var err error
-	database, err = InitDatabase()
+	database, err = InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)

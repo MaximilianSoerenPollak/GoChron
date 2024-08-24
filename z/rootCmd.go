@@ -18,8 +18,10 @@ var notes string
 var exportDate bool
 var exportHours bool
 var fileName string
+var importFile string
 var exportAllFields bool
 var sorting string
+var verbose bool
 
 var since string
 var until string

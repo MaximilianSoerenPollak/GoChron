@@ -107,7 +107,7 @@ func init() {
 	listCmd.Flags().StringVar(&until, "until", "", "Date/time to list until")
 	listCmd.Flags().StringVarP(&project, "project", "p", "", "Project to be listed")
 	listCmd.Flags().StringVarP(&task, "task", "t", "", "Task to be listed")
-	listCmd.Flags().BoolVar(&fractional, "decimal", false, "Show fractional hours in decimal format instead of minutes")
+	listCmd.Flags().BoolVar(&fractional, "decimal", true, "Show fractional hours in decimal format instead of minutes")
 	listCmd.Flags().BoolVar(&listTotalTime, "total", false, "Show total time of hours for listed activities")
 	listCmd.Flags().BoolVar(&listOnlyProjectsAndTasks, "only-projects-and-tasks", false, "Only list projects and their tasks, no entries")
 	listCmd.Flags().BoolVar(&listOnlyTasks, "only-tasks", false, "Only list tasks, no projects nor entries")

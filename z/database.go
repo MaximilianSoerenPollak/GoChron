@@ -98,7 +98,7 @@ func (db *Database) UpdateEntry(entry Entry) error {
 					project = '%s',
 					task = '%s',
 					notes = '%s',
-					running = %t
+					running = '%t'
 			WHERE id = %d;`, args...)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -133,7 +133,7 @@ func (db *Database) DeleteEntry(id int64) error {
 
 func (db *Database) GetRunningEntry() (*Entry, error) {
 	// We have to make sure that NEVER two entries can be 'running = true'
-	query := `SELECT * FROM entries WHERE running = true;`
+	query := `SELECT * FROM entries WHERE running = 'true';`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	var entryDB EntryDB

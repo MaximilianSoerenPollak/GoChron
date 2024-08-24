@@ -1,11 +1,13 @@
 
 ### Info 
-
+  
 This is a fork of the 'zeit' repo which can be found [here](https://github.com/mrusme/zeit/)
 
 Much thanks to Mrusme for his work and for making it available to the public.   
 I have decided to fork it as I wanted to have some additions and be able to use this accorss different PC's.  
 Sadly my setup even with changes did not work with the requiered '.editorconfig',so I couldn't contribute upstream. 
+
+The original repo also has some extras inside that might be interesting to some people.  
 
 > **[Jump to the original project](https://github.com/mrusme/zeit)**
 
@@ -17,7 +19,7 @@ Table of contents:
 - [What?](#What-is-this)
 - [Changes to know](#changes-to-know)
 - [How to build/install](#building)
-- [What is new](#New-additions)
+- [Usage](#usage)
 - [Issues](#Issues)
 
 ## What is this?
@@ -25,8 +27,7 @@ Table of contents:
 This project is a `cli` that allows you to track how much time you spend on a given task on a given project.
 You can export the statistics to a CSV, display them in the Terminal via a nice statistics screen, or just list them out.
 
-<insert picture of good screenshot>
-
+![](documentation/begining_pic.png)
 ## Changes to know
 
 I just realeased the `v0.2.0`, you can head over there to read about the changes too. 
@@ -36,10 +37,13 @@ Here are some changes I have made to my fork, that you should be aware of if you
 
 #### V0.2.0 Changes 
 - Change to SQLITE3 Database 
+- Able to import 'zeit' or 'csv' outputs
 - Remove 'tyme' completely (from import & export)
 - Removed some commands to streamline the Process 
-- Added 'colors' to the 'stats' page. 
+- Added 'colors' to the 'stats' page
+- Changed README to include examples and new screenshots
 - Removed Git/hub linking feature 
+- Made the 'decimal' flag the default everywhere
 
 #### V0.1.0 Changes
 - Removed 'extras' as I had no need for them 
@@ -62,339 +66,112 @@ You can accomplish this by moving the binary to `/bin/`.
 If you rather would just the user have execute this binary you can also make a `bin` folder in your home directory and add the zeit binary in there and add the folder to path with adding this to the *.bashrc* or your shells config file  
 `export PATH="$PATH:/usr/local/bin"`
 
-###  New additions
+### Usage 
+Lines that start with `#` inside the commands show you what the output looks like.  
 
+#### Basic Time tracking
 
-#### Export to CSV 
-I have added the option to allow `zeit` to also export to 'csv'. Currently it will use `;` as a seperator
-but the plan is to have that configurable in the future.  
-How to use it: 
-
+Start tracking:  
 ```sh 
-$ zeit export --format "csv" --file-name "exportedTimes.csv"
+zeit track --task "Working on Issue 3" --project "WorkProject" 
+#Started tracking --> Task: Working on Issue 3 on Project: WorkProject 
 ```
-
-#### Extra options to export 
-There are some new additions to the export command.
-- `date` in a *YYYY-MM-DD Format*. Flag -> `--date` 
-- `hours` which just adds the calulated hours per task to the export. Flag -> `--hours-decimal` 
-
-They can be accessed via flags (booleans) to turn them on/off. By default both are `true` so your exports will contain them
-If you'd like either, or both to be false just supply the correct flag with `false`, like so:  
+Finish tracking: 
 ```sh 
-$ zeit export --hours-decimal false --date false
-```
-
-- `exportAllFields` which **adds** the **'Begin, Finish & Notes'** fields to the csv export. Default: `false`  
-For now this only does something when you specified `--format "csv"` but this will change in the future and apply to all exports.
-
-
-
-### Issues 
-If you find issues or bugs, by all means please open an issue with a description and I will take a look at it as soon as I can. 
-
----
----
-# ORIGINAL README FROM THE FORKED PROJECT
-
----
-
-ZEIT
-----
-
-![zeit](documentation/zeit.png)
-
-Zeit, erfassen. A command line tool for tracking time spent on tasks & projects.
-
-[Get some more info on why I build this
-here](https://マリウス.com/zeit-erfassen-a-cli-activity-time-tracker/).
-
-[Download the latest version for macOS, Linux, FreeBSD, NetBSD, OpenBSD & Plan9
-here](https://github.com/mrusme/zeit/releases/latest).
-
-
-## Build
-
-```sh
-make
-```
-
-**Info**: This will build using the version 0.0.0. You can prefix the `make` 
-command with `VERSION=x.y.z` and set `x`, `y` and `z` accordingly if you want 
-the version in `zeit --help` to be a different one.
-
-
-## Usage
-
-![zeit](documentation/header.jpg)
-
-Please make sure to `export ZEIT_DB=~/.config/zeit.db` (or whatever location 
-you would like to have the zeit database at).
-
-*zeit*'s data structure contains of the following key entities: `project`, 
-`task` and `entry`. An `entry` consists of a `project` and a `task`. These
-don't have to pre-exist and can be created on-the-fly inside a new `entry` using
-e.g. `zeit track --project "New Project" --task "New Task"`. In order to
-configure them, the `zeit project` and the `zeit task` commands can be utilised.
-
-
-### Projects
-
-A project can be configured using `zeit project`:
-
-```sh
-zeit project --help
-```
-
-#### Examples:
-
-Set the project color to a hex color code, allowing `zeit stats` to display
-information in that color (if your terminal supports colours):
-
-```sh
-zeit project --color '#d3d3d3' "cool project"
-```
-
-
-### Task
-
-A task can be configured using `zeit task`:
-
-```sh
-zeit task --help
-```
-
-#### Examples:
-
-Setting up a Git repository to have commit messages automatically imported
-into the activity notes when an activity is finished:
-
-```sh
-zeit task --git ~/my/git/repository "development"
-```
-
-**Info:** You will have to have the `git` binary available in your `PATH` for 
-this to work. *zeit* automatically limits the commit log to the exact time of 
-the activity's beginning- and finish-time. Commit messages before or after these 
-times won't be imported.
-
-
-### Track activity
-
-```sh
-zeit track --help
-```
-
-#### Examples:
-
-Begin tracking a new activity and reset the start time to 15 minutes ago:
-
-```sh
-zeit track --project project --task task --begin -0:15
-```
-
-
-### Show current activity
-
-```sh
-zeit tracking
-```
-
-
-### Finish tracking activity
-
-```sh
-zeit finish --help
-```
-
-#### Examples:
-
-Finish tracking the currently tracked activity without adding any further info:
-
-```sh
 zeit finish
+# ■ finished tracking Woorking on Issue 3 on WorkProject for 2,07h
 ```
 
-Finish tracking the currently tracked activity and change its task:
-
-```sh
-zeit finish --task other-task
+You can also add 'notes' to the task with `--notes` right when you start tracking it.
+But, you can also add notes later like this:
+```sh 
+zeit entry --notes "Estimate time: 5h" 1
+# ● 1
+#   Working on Issue 3 on WorkProject
+#   2,07h from 2024-08-22 20:44 to 2024-08-22 22:51 
+#
+#   Notes:
+#   Estimate time: 5h
 ```
+>Note: The `1` at the end is the 'id' of the entry. You can find this by doing `zeit list`. The ID is the number before the entry you wish to change.   
+>Example of `zeit list` output.  
+><br>
+>![](documentation/zeit_list_example.png)
 
-Finish tracking the currently tracked activity and adjust its start time to 
-4 PM:
+#### Show all the entries
 
-```sh
-zeit finish --begin 16:00
+You can show all entries via `list`, find out about all flags via `zeit list --help`
+```sh 
+zeit list 
+#1 Working on Issue 3 on WorkProject from 2024-08-22 20:44 to 2024-08-22 23:30 (4.77h)
+#2 Working on Feature C on WorkProject 2 from 2024-08-23 14:00 to 2024-08-23 20:52 (6.87h)
+#3 Test on Test from 2024-08-24 11:00 to 2024-08-24 17:26 (4.45h)
+#4 Long ago task on OldProject from 2024-07-01 10:00 to 2024-07-01 13:00 (3.00h)
 ```
-
-
-### List tracked activity
-
-```sh
-zeit list --help
-```
-
-#### Examples:
-
-List all tracked activities:
-
-```sh
-zeit list
-```
-
-List all tracked activities since a specific date/time:
-
-```sh
-zeit list --since "2020-10-14T00:00:01+01:00"
-```
-
-List all tracked activities and add the total hours:
-
-```sh
-zeit list --total
-```
-
-List only projects and tasks (relational):
+But you can also just let it show the relations between tasks and projects via `--only-projects-and-tasks`
 
 ```sh
 zeit list --only-projects-and-tasks
+# ◆ OldProject
+# └── Long ago task
+# ◆ WorkProject
+# └── Working on Issue 3
+# ◆ WorkProject 2
+# └── Working on Feature C
+# ◆ Test
+# └── Test
 ```
 
-List only projects and tasks (relational) that were tracked since a specific 
-date/time:
-
-```sh
-zeit list --only-projects-and-tasks --since "2020-10-14T00:00:01+01:00"
-```
-
-
-### Display/update activity
-
-```sh
-zeit entry --help
-```
-
-#### Examples:
-
-Display a tracked activity:
-
-```sh
-zeit entry 14037730-5c2d-44ff-b70e-81f1dcd4eb5f
-```
-
-Update a tracked activity:
-
-```sh
-zeit entry --finish "2020-09-02T18:16:00+01:00" 14037730-5c2d-44ff-b70e-81f1dcd4eb5f
-```
-
-
-### Erase tracked activity
-
-```sh
-zeit erase --help
-```
-
-#### Examples:
-
-Erase a tracked activity by its internal ID:
-
-```sh
-zeit erase 14037730-5c2d-44ff-b70e-81f1dcd4eb5f
-```
-
-
-### Statistics
-
-![zeit stats](documentation/zeit_stats.jpg)
-
+#### Look at Stats
+Zeit allows you to display your stats as well, right in your terminal. It colors the projects in 4 rotating colors, to make it easier to disginguish (if your terminal supports colours).  
+Zeit will always display the last two weeks (in the calendar view up top), but will list all entry if you have not given it any filters
 ```sh
 zeit stats
 ```
+> 6.87h => 6 hours and 87% of another hour. So (87% of 60 ==> 52min).
+
+![](documentation/zeit_stats.png)  
 
 
-### Import tracked activities
-
-```sh
-zeit import --help
+With the `--decimal=false` flag you can change the decimal behaviour.
+```sh 
+zeit stats --decimal=false 
 ```
+> 6.52h => 6 hours and 52 Minutes  
 
-The following formats are supported as of right now:
+![](documentation/zeit_stats_decimal_false.png)
 
-#### `tyme`: Tyme 3 JSON
 
-It is possible to import JSON exports from [Tyme 3](https://www.tyme-app.com). 
-It is important that the JSON is exported with the following options set/unset:
-
-![Tyme 3 JSON export](documentation/tyme3json.png)
-
-- `Start`/`End` can be set as required
-- `Format` has to be `JSON`
-- `Export only unbilled entries` can be set as required
-- `Mark exported entries as billed` can be set as required
-- `Include non-billable tasks` can be set as required
-- `Filter Projects & Tasks` can be set as required
-- `Combine times by day & task` **must** be unchecked
-
-During import, *zeit* will create SHA1 sums for every Tyme 3 entry, which 
-allows it to identify every imported activity. This way *zeit* won't import the 
-exact same entry twice. Keep this in mind if you change entries in Tyme and 
-then import them again into *zeit*.
-
-#### Examples:
-
-Import a Tyme 3 JSON export:
-
-```sh
-zeit import --format tyme ./tyme.export.json
+#### Export to CSV 
+I have added the option to allow `zeit` to also export to 'csv'. Currently it will use `;` as a seperator.
+If you do not specify a `--file-name` zeit will use `zeit-export-{yyyy-mm-dd}.csv` as the default file name.
+```sh 
+$ zeit export --format "csv" 
+# ● No file-name provided. Using 'zeit-output-2024-08-24.csv' as default.
+# ■ export finished.
 ```
+> If you want to export it, for later import (on a different machine or so) make sure 
+> to use the `--export-all-fields` flag. 
+
+The `--export-all-fields` flag, **adds** the **'Begin, Finish & Notes'** fields to the csv export.
+For now this only works with the '--format "csv"' and not with 'zeit'. As the zeit format exports all fields by default.
 
 
-### Export tracked activities
+#### Change an entry 
 
-```sh
-zeit export --help
+In zeit it's possible to change entries. This can be done via the `entry` command. 
+For example, let's change the end time for one of our entries.
+```sh 
+zeit entry --finish "2024-08-22 23:30" 1
+# ● 1
+#   Working on Issue 3 on WorkProject
+#   4.77h from 2024-08-22 20:44 to 2024-08-22 23:30
+#
+#   Notes:
+#   Estimate time: 5h
 ```
+We can obviously change anything about the project, `--task`, `--being`, `--notes`, `--task`, `--project`, `--finish`  
+Find out more via the `--help` command.
 
-The following formats are supported as of right now:
-
-#### `zeit`: *zeit* JSON
-
-The *zeit* internal JSON format. Basically a dump of the database including
-only tracked activities.
-
-#### `tyme`: Tyme 3 JSON
-
-It is possible to export JSON compatible to the Tyme 3 JSON format. Fields that
-are not available in *zeit* will be filled with dummy values, e.g.
-`Billing: "UNBILLED"`.
-
-#### Examples:
-
-Export a Tyme 3 JSON:
-
-```sh
-zeit export --format tyme --project "my project" --since "2020-04-01T15:04:05+07:00" --until "2020-04-04T15:04:05+07:00"
-```
-
-## Integrations
-
-Here are a few integrations and extensions built by myself as well as other 
-people that make use of `zeit`:
-
-- [`zeit-waybar-bemenu.sh`](https://github.com/mrusme/zeit/blob/main/extras/zeit-waybar-bemenu.sh), 
-  a script for integrating `zeit` into
-  [waybar](https://github.com/Alexays/Waybar), using
-  [bemenu](https://github.com/Cloudef/bemenu)
-- [`zeit-waybar-wofi.sh`](https://github.com/mrusme/zeit/blob/main/extras/zeit-waybar-wofi.sh), 
-  a script for integrating `zeit` into
-  [waybar](https://github.com/Alexays/Waybar), using
-  [wofi](https://hg.sr.ht/~scoopta/wofi)
-- [`zeit.1m.sh`](https://github.com/mrusme/zeit/blob/main/extras/zeit.1m.sh), 
-  an [`xbar`](https://github.com/matryer/xbar) plugin for `zeit`
-- [`zeit-status.sh`](https://github.com/khughitt/dotfiles/blob/master/polybar/scripts/zeit-status.sh), 
-  a [Polybar](https://github.com/polybar/polybar) integration for `zeit` by 
-  [@khughitt](https://github.com/khughitt) 
-  (see [#1](https://github.com/mrusme/zeit/issues/1))
-- your link here, feel free to PR! :-)
+### Issues 
+If you find issues or bugs, by all means please open an issue with a description and I will take a look at it as soon as I can. 

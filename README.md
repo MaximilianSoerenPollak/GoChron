@@ -27,7 +27,7 @@ Table of contents:
 This project is a `cli` that allows you to track how much time you spend on a given task on a given project.
 You can export the statistics to a CSV, display them in the Terminal via a nice statistics screen, or just list them out.
 
-![](documentation/begining_pic.png)
+![](documentation/out.gif)
 ## Changes to know
 
 I just realeased the `v0.2.0`, you can head over there to read about the changes too. 

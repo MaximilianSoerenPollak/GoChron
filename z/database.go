@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"os"
 	"time"
 
@@ -45,7 +46,7 @@ func (db *Database) AddEntry(entry *Entry, running bool) error {
 		entry.Finish.Truncate(0).String(),
 		entry.Hours.String(),
 		entry.Project,
-		entry.Task,
+		strings.ReplaceAll(entry.Task, `'`,`"`),
 		entry.Notes,
 		running}
 	query := fmt.Sprintf(`INSERT INTO entries(date, start, finish, hours, project, task, notes, running) 

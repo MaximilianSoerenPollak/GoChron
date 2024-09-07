@@ -33,7 +33,11 @@ var finishCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		// Finishing the entry
-		runningEntry.SetFinish()
+		err = runningEntry.SetFinish()
+		if err != nil {
+			fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
+			os.Exit(1)
+		}
 		if notes != "" {
 			runningEntry.Notes = strings.ReplaceAll(notes, "\\n", "\n")
 		}

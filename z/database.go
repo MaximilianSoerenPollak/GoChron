@@ -158,6 +158,37 @@ func (db *Database) GetRunningEntry() (*Entry, error) {
 	return entry, nil
 }
 
+func (db *Database) GetAllEntriesAsString() ([]EntryDB, error) {
+	query := `SELECT * FROM entries;`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		fmt.Printf("Got an error reading all entries. Error: %s\n", err.Error())
+		return nil, err
+	}
+	var entries []EntryDB
+	for rows.Next() {
+		var entryDB EntryDB
+		err := rows.Scan(
+			&entryDB.ID,
+			&entryDB.Date,
+			&entryDB.Begin,
+			&entryDB.Finish,
+			&entryDB.Hours,
+			&entryDB.Project,
+			&entryDB.Task,
+			&entryDB.Notes,
+			&entryDB.Running)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, entryDB)
+	}
+	return entries, nil
+}
+
+
 func (db *Database) GetAllEntries() ([]Entry, error) {
 	query := `SELECT * FROM entries;`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

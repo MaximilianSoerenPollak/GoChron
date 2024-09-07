@@ -35,6 +35,22 @@ type EntryDB struct {
 	Running bool
 }
 
+func (edb *EntryDB) FormatTimes() error {
+	parsedFinish, err := dateparse.ParseAny(edb.Finish)
+	if err != nil {
+		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
+		return err
+	}
+	parsedBegining, err := dateparse.ParseAny(edb.Begin)
+	if err != nil {
+		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
+		return err
+	}
+	edb.Finish = parsedFinish.Format("2006-01-02 15:04:05")
+	edb.Begin = parsedBegining.Format("2006-01-02 15:04:05")
+	return nil
+}
+
 func (edb *EntryDB) ConvertToEntry() (*Entry, error) {
 	entry := Entry{}
 	idParsed, err := strconv.Atoi(edb.ID)
@@ -126,9 +142,15 @@ func (entry *Entry) SetBeginFromString(begin string) (time.Time, error) {
 	entry.Begin = beginTime
 	return beginTime, nil
 }
-func (entry *Entry) SetFinish() {
-	entry.Finish = time.Now().Truncate(0)
+func (entry *Entry) SetFinish() error {
+	formatedTime, err := time.Parse("2006-01-02 15:04", time.Now().Truncate(0).Format("2006-01-02 15:04"))
+	if err != nil {
+		return err
+	}
+
+	entry.Finish = formatedTime
 	entry.Running = false
+	return nil
 }
 
 func (entry *Entry) SetFinishFromString(finish string) (time.Time, error) {
@@ -299,33 +321,3 @@ func GetFilteredEntries(entries []Entry, project string, task string, since time
 
 	return filteredEntries, nil
 }
-
-// func SortEntries(entries []Entry, user, sortingType string) ([]Entry, error) {
-// 	fmt.Printf("These are the incoming entries: \n %v\n", entries)
-// 	switch sortingType {
-// 	case "chronological":
-// 		sort.Slice(entries, func(i, j int) bool {
-// 			return entries[i].Begin.After(entries[j].Begin)
-// 		})
-// 	case "hours":
-// 		sort.Slice(entries, func(i, j int) bool {
-// 			iInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
-// 			if err != nil {
-// 				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
-// 			}
-// 			jInt, err := strconv.ParseFloat(strings.ReplaceAll(entries[i].Hours.String(), ",", "."), 32)
-// 			decimal.NewFromString(entries[i].Hours.String())
-// 			if err != nil {
-// 				fmt.Printf("Could not convert string hours to int, error: %s\n", err.Error())
-// 			}
-// 			return iInt > jInt
-// 		})
-// 	case "time":
-// 		sort.Slice(entries, func(i, j int) bool {
-// 			return entries[i].Begin.After(entries[j].Begin)
-// 		})
-// 	}
-//
-// 	fmt.Printf("These are the outgoing entries: \n %v", entries)
-// 	return entries, nil
-// }

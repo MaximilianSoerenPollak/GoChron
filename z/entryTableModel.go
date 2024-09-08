@@ -3,7 +3,9 @@ package z
 import (
 	"fmt"
 	"os"
+	"io"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -12,13 +14,15 @@ type entryModel struct {
 	table       table.Model
 	db          *Database
 	compactView bool
+	state 		int // 0 = Stay in model. 1 = Switch back to main model
+	dump        io.Writer
 }
 
 func (m entryModel) Init() tea.Cmd {
 	return nil
 }
 
-func initEntryListModel() entryModel {
+func initEntryListModel(dump io.Writer) entryModel {
 	database, err := InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
@@ -29,10 +33,15 @@ func initEntryListModel() entryModel {
 		table:       compactTable,
 		db:          database,
 		compactView: true,
+		state: 0,
+		dump: dump,
 	}
 }
 
 func (m entryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.dump != nil {
+		spew.Fdump(m.dump, msg)
+	}
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -50,6 +59,7 @@ func (m entryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
 			)
 		case "ctrl+v":
+			// Switch from showing 'start / finish' to not showing it.
 			if m.compactView {
 				expTable := createExpandedTable(*m.db)
 				m.table = expTable
@@ -60,8 +70,9 @@ func (m entryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.table = compTable
 				m.table.UpdateViewport()
 				m.compactView = true
-			}
-
+			}	
+		case "a", "ctrl+a":
+			m.state = 1
 		}
 	}
 	m.table, cmd = m.table.Update(msg)

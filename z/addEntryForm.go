@@ -2,14 +2,13 @@ package z
 
 import (
 	"fmt"
-	"os"
 	"io"
+	"os"
 
-
-	"github.com/davecgh/go-spew/spew"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss/list"
+	"github.com/davecgh/go-spew/spew"
 )
 
 type taskForm struct {
@@ -60,14 +59,28 @@ func (m taskForm) Init() tea.Cmd {
 // ...
 func (m taskForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.dump != nil {
-		spew.Fdump(m.dump, msg)
+		spew.Fdump(m.dump, fmt.Sprintf("taskForm: %s", msg))
+	}
+	
+	var cmds []tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		}
 	}
 	form, cmd := m.form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {
 		m.form = f
+		cmds = append(cmds, cmd)
+	}
+	if m.form.State == huh.StateCompleted {
+		cmds = append(cmds, func() tea.Msg { return switchToListModel{} } )
+		// return m, func() tea.Msg { return switchToListModel{} }
 	}
 
-	return m, cmd
+	return m, tea.Batch(cmds...)
 }
 
 func (m taskForm) View() string {

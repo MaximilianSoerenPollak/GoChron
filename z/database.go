@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -46,7 +46,7 @@ func (db *Database) AddEntry(entry *Entry, running bool) error {
 		entry.Finish.Truncate(0).String(),
 		entry.Hours.String(),
 		entry.Project,
-		strings.ReplaceAll(entry.Task, `'`,`"`),
+		strings.ReplaceAll(entry.Task, `'`, `"`),
 		entry.Notes,
 		running}
 	query := fmt.Sprintf(`INSERT INTO entries(date, start, finish, hours, project, task, notes, running) 
@@ -187,7 +187,6 @@ func (db *Database) GetAllEntriesAsString() ([]EntryDB, error) {
 	}
 	return entries, nil
 }
-
 
 func (db *Database) GetAllEntries() ([]Entry, error) {
 	query := `SELECT * FROM entries;`

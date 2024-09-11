@@ -77,7 +77,7 @@ For the 'csv' output, please make sure you export all the fields.`,
 			}
 			// We are skipping the header
 			for _, v := range content[1:] {
-				if len(v) != 7{
+				if len(v) != 7 {
 					fmt.Printf("%s The csv has the wrong format, please make sure you export the csv with all fields\n", CharError)
 					fmt.Printf("%s The fields expected in THIS order: date, start, finish, project, task, hours, notes\n", CharInfo)
 					os.Exit(1)

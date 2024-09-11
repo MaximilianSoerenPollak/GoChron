@@ -27,7 +27,7 @@ func exportCSV(entries []Entry) error {
 		fmt.Printf("%s No file-name provided. Using '%s' as default.\n\n", CharInfo, fileName)
 	} else {
 		fmt.Printf("%s Using file-name: '%s'.\n\n", CharInfo, fileName)
-	}	
+	}
 	_, err := os.Open(fileName)
 	if err == nil {
 		fmt.Printf("%s file with name '%s' already exists.\nPlease choose a different filename, or delete the file if no longer needed", CharError, fileName)

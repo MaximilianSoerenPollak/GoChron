@@ -1,59 +1,59 @@
 package z
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
-	"os"
 	"io"
+	"os"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/davecgh/go-spew/spew"
 )
 
-type entryModel struct {
+type listModel struct {
 	table       table.Model
 	db          *Database
 	compactView bool
-	state 		int // 0 = Stay in model. 1 = Switch back to main model
 	dump        io.Writer
 }
 
-func (m entryModel) Init() tea.Cmd {
+func (m listModel) Init() tea.Cmd {
 	return nil
 }
 
-func initEntryListModel(dump io.Writer) entryModel {
+func initEntryListModel(dump io.Writer) listModel {
 	database, err := InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)
 	}
 	compactTable := createCompactTable(*database)
-	return entryModel{
+	return listModel{
 		table:       compactTable,
 		db:          database,
 		compactView: true,
-		state: 0,
-		dump: dump,
+		dump:        dump,
 	}
 }
 
-func (m entryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.dump != nil {
-		spew.Fdump(m.dump, msg)
+		spew.Fdump(m.dump, fmt.Sprintf("EntryModel: %s", msg))
 	}
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
 		case "esc":
 			if m.table.Focused() {
 				m.table.Blur()
 			} else {
 				m.table.Focus()
 			}
-		case "q", "ctrl+c":
-			return m, tea.Quit
 		case "enter":
 			return m, tea.Batch(
 				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
@@ -70,16 +70,25 @@ func (m entryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.table = compTable
 				m.table.UpdateViewport()
 				m.compactView = true
-			}	
-		case "a", "ctrl+a":
-			m.state = 1
+			}
+		case "a":
+			oldProject = true
+			_, err := database.GetUniqueProjects()
+			if errors.Is(err, sql.ErrNoRows) {
+				tea.Println("There are currently no projects. Please create one")
+				oldProject = false
+			}
+			return m, func() tea.Msg { return switchToAddEntryModel{} }
+		case "ctrl+a":
+			oldProject = false
+			return m, func() tea.Msg { return switchToAddEntryModel{} }
 		}
 	}
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
 }
 
-func (m entryModel) View() string {
+func (m listModel) View() string {
 	return baseStyle.Render(m.table.View()) + "\n  " + m.table.HelpView() + "\n"
 }
 

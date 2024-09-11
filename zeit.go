@@ -8,7 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-
 func main() {
 	var dump *os.File
 	if _, ok := os.LookupEnv("DEBUG"); ok {
@@ -19,7 +18,8 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	p := tea.NewProgram(z.InitialModel(dump))
+	m := z.InitialModel(dump)
+	p := tea.NewProgram(&m)
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)

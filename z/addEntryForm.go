@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"errors"
+	"database/sql"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -16,8 +18,11 @@ type taskForm struct {
 	dump io.Writer
 }
 
+
 var oldProject bool
 var newEntry Entry
+var taskRunning bool
+var stopTask bool
 
 func initMainForm(dump io.Writer) taskForm {
 	uniqueProjects, err := database.GetUniqueProjects()
@@ -53,6 +58,35 @@ func initMainForm(dump io.Writer) taskForm {
 }
 
 func (m taskForm) Init() tea.Cmd {
+	taskRunning = true
+	runningEntry, err := database.GetRunningEntry()
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			taskRunning = false
+		default:
+			fmt.Printf("something went wrong getting current runnign entries. Error: %s", err.Error())
+			os.Exit(1)
+		}
+	}
+	err = huh.NewForm(huh.NewGroup(huh.NewConfirm().Title("Stop running task and start new one?").Value(&stopTask))).Run()
+	if err != nil {
+		fmt.Printf("something went wrong running the confirm form. Error: %s", err.Error())
+		os.Exit(1)
+	}
+	if !stopTask{
+		return func() tea.Msg {return switchToListModel{}}	
+	}
+	err = runningEntry.SetFinish()
+	if err != nil {
+		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
+		os.Exit(1)
+	}
+	err = database.AddFinishToEntry(*runningEntry)
+	if err != nil {
+		fmt.Printf("%s could not set finish on entry in DB. Error: %s\n", CharError, err.Error())
+		os.Exit(1)
+	}
 	return m.form.Init()
 }
 
@@ -76,6 +110,13 @@ func (m taskForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 	if m.form.State == huh.StateCompleted {
+		newEntry.SetBegining()
+		newEntry.SetDateFromBegining()
+		err := database.AddEntry(&newEntry, true)
+		if err != nil {
+			fmt.Printf("%s could not add entry to the DB. Error: %s\n", CharError, err.Error())
+			os.Exit(1)
+		}
 		cmds = append(cmds, func() tea.Msg { return switchToListModel{} } )
 		// return m, func() tea.Msg { return switchToListModel{} }
 	}
@@ -85,9 +126,6 @@ func (m taskForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m taskForm) View() string {
 	if m.form.State == huh.StateCompleted {
-		newEntry.SetBegining()
-		newEntry.SetDateFromBegining()
-		database.AddEntry(&newEntry, true)
 		return fmt.Sprintf("Task added successfully:\n %s", createNewlyAddedTaskList())
 	}
 	return m.form.View()

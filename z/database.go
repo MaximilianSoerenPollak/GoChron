@@ -50,7 +50,7 @@ func (db *Database) AddEntry(entry *Entry, running bool) error {
 		entry.Notes,
 		running}
 	query := fmt.Sprintf(`INSERT INTO entries(date, start, finish, hours, project, task, notes, running) 
-		VALUES('%s','%s','%s','%s','%s','%s','%s', '%t');`, args...)
+		VALUES('%s','%s','%s','%s','%s','%s','%s', %t);`, args...)
 	result, err := db.DB.ExecContext(ctx, query)
 	if err != nil {
 		return err
@@ -63,6 +63,28 @@ func (db *Database) AddEntry(entry *Entry, running bool) error {
 	entry.Running = true
 	return nil
 }
+
+func (db *Database) GetEntryAsString(id int64) (*EntryDB, error) {
+	query := fmt.Sprintf(`SELECT * FROM entries WHERE id = '%d';`, id)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var entryDB EntryDB
+	err := db.DB.QueryRowContext(ctx, query).Scan(
+		&entryDB.ID,
+		&entryDB.Date,
+		&entryDB.Begin,
+		&entryDB.Finish,
+		&entryDB.Hours,
+		&entryDB.Project,
+		&entryDB.Task,
+		&entryDB.Notes,
+		&entryDB.Running)
+	if err != nil {
+		return nil, err
+	}
+	return &entryDB, nil
+}
+
 
 func (db *Database) GetEntry(id int64) (*Entry, error) {
 	query := fmt.Sprintf(`SELECT * FROM entries WHERE id = '%d';`, id)
@@ -99,7 +121,7 @@ func (db *Database) UpdateEntry(entry Entry) error {
 					project = '%s',
 					task = '%s',
 					notes = '%s',
-					running = '%t'
+					running = %t
 			WHERE id = %d;`, args...)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -134,7 +156,7 @@ func (db *Database) DeleteEntry(id int64) error {
 
 func (db *Database) GetRunningEntry() (*Entry, error) {
 	// We have to make sure that NEVER two entries can be 'running = true'
-	query := `SELECT * FROM entries WHERE running = 'true';`
+	query := `SELECT * FROM entries WHERE running = true;`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	var entryDB EntryDB

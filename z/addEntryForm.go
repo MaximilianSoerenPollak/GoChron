@@ -69,6 +69,9 @@ func (m taskForm) Init() tea.Cmd {
 			os.Exit(1)
 		}
 	}
+	if !taskRunning{
+		return m.form.Init()
+	}
 	err = huh.NewForm(huh.NewGroup(huh.NewConfirm().Title("Stop running task and start new one?").Value(&stopTask))).Run()
 	if err != nil {
 		fmt.Printf("something went wrong running the confirm form. Error: %s", err.Error())
@@ -110,7 +113,7 @@ func (m taskForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 	if m.form.State == huh.StateCompleted {
-		newEntry.SetBegining()
+		newEntry.SetBeginingToNow()
 		newEntry.SetDateFromBegining()
 		err := database.AddEntry(&newEntry, true)
 		if err != nil {
@@ -142,3 +145,5 @@ func createNewlyAddedTaskList() *list.List {
 		"Notes", list.New(newEntry.Notes),
 	)
 }
+
+

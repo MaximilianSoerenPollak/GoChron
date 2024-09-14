@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,6 +15,7 @@ import (
 
 type listModel struct {
 	table       table.Model
+	entries     []EntryDB
 	db          *Database
 	compactView bool
 	dump        io.Writer
@@ -29,10 +31,16 @@ func initEntryListModel(dump io.Writer) listModel {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)
 	}
-	compactTable := createCompactTable(*database)
+	entries, err := database.GetAllEntriesAsString()
+	if err != nil {
+		fmt.Printf("%s %+v\n", CharError, err)
+		os.Exit(1)
+	}
+	compactTable := createCompactTable(entries)
 	return listModel{
 		table:       compactTable,
 		db:          database,
+		entries:     entries,
 		compactView: true,
 		dump:        dump,
 	}
@@ -61,12 +69,12 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+v":
 			// Switch from showing 'start / finish' to not showing it.
 			if m.compactView {
-				expTable := createExpandedTable(*m.db)
+				expTable := createExpandedTable(m.entries)
 				m.table = expTable
 				m.table.UpdateViewport()
 				m.compactView = false
 			} else {
-				compTable := createCompactTable(*m.db)
+				compTable := createCompactTable(m.entries)
 				m.table = compTable
 				m.table.UpdateViewport()
 				m.compactView = true
@@ -82,6 +90,9 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+a":
 			oldProject = false
 			return m, func() tea.Msg { return switchToAddEntryModel{} }
+		case "e":
+			entrySelected := m.getRowAsEntryDB()
+			return m, func() tea.Msg { return switchToEditModel{entry: entrySelected} }
 		}
 	}
 	m.table, cmd = m.table.Update(msg)
@@ -92,12 +103,7 @@ func (m listModel) View() string {
 	return baseStyle.Render(m.table.View()) + "\n  " + m.table.HelpView() + "\n"
 }
 
-func createExpandedTable(db Database) table.Model {
-	entries, err := db.GetAllEntriesAsString()
-	if err != nil {
-		fmt.Printf("%s %+v\n", CharError, err)
-		os.Exit(1)
-	}
+func createExpandedTable(entries []EntryDB) table.Model {
 	columns := []table.Column{
 		{Title: "ID", Width: 5},
 		{Title: "Date", Width: 10},
@@ -134,13 +140,9 @@ func createExpandedTable(db Database) table.Model {
 	return t
 }
 
-func createCompactTable(db Database) table.Model {
-	entries, err := db.GetAllEntriesAsString()
-	if err != nil {
-		fmt.Printf("%s %+v\n", CharError, err)
-		os.Exit(1)
-	}
+func createCompactTable(entries []EntryDB) table.Model {
 	columns := []table.Column{
+		{Title: "ID", Width: 5},
 		{Title: "Date", Width: 20},
 		{Title: "Project", Width: 30},
 		{Title: "Task", Width: 40},
@@ -150,7 +152,7 @@ func createCompactTable(db Database) table.Model {
 	var rows []table.Row
 	for _, v := range entries {
 		r := table.Row{
-			v.Date, v.Project, v.Task, v.Hours, v.Notes}
+			v.ID, v.Date, v.Project, v.Task, v.Hours, v.Notes}
 		rows = append(rows, r)
 	}
 	t := table.New(
@@ -159,10 +161,24 @@ func createCompactTable(db Database) table.Model {
 		table.WithFocused(true),
 		table.WithHeight(7),
 	)
-
 	s := table.DefaultStyles()
 	s.Header = tableHeaderStyle
 	s.Selected = selectedEntryStyle
 	t.SetStyles(s)
 	return t
+}
+
+func (m listModel) getRowAsEntryDB() EntryDB {
+	selected := m.table.SelectedRow()
+	idConv, err := strconv.Atoi(selected[0])
+	if err != nil {
+		fmt.Printf("%s could not convert id. Error: %s", CharError, err.Error())
+		os.Exit(1)
+	}
+	entry, err := m.db.GetEntryAsString(int64(idConv))
+	if err != nil {
+		fmt.Printf("%s could not convert id. Error: %s", CharError, err.Error())
+		os.Exit(1)
+	}
+	return *entry
 }

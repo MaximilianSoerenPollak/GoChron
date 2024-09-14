@@ -98,7 +98,7 @@ func NewEntry(project string, task string) Entry {
 	newEntry.Project = project
 	newEntry.Task = task
 
-	newEntry.SetBegining()
+	newEntry.SetBeginingToNow()
 	newEntry.SetDateFromBegining()
 	return newEntry
 }
@@ -107,8 +107,14 @@ func (entry *Entry) SetDateFromBegining() {
 	entry.Date = entry.Begin.Format("02-01-2006")
 }
 
-func (entry *Entry) SetBegining() {
-	entry.Begin = time.Now().Truncate(0)
+func (entry *Entry) SetBeginingToNow() error {
+	formatedTime, err := time.Parse("2006-01-02 15:04", time.Now().Truncate(0).Format("2006-01-02 15:04"))
+	if err != nil {
+		return err 
+	}
+	entry.Begin = formatedTime
+	entry.Running = true 
+	return nil
 }
 
 func (entry *Entry) GetOutputStrLong() string {

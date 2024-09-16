@@ -5,12 +5,14 @@ import (
 	"io"
 	"os"
 
+    "golang.org/x/term"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/davecgh/go-spew/spew"
 )
 
 var entryToChange EntryDB
+
 
 type changeEntryModel struct {
 	form *huh.Form
@@ -32,7 +34,6 @@ func initChangeEntryForm(dump io.Writer, entry EntryDB) changeEntryModel {
 	entryToChange.Task = entry.Task 
 	entryToChange.Project = entry.Project 
 	entryToChange.Notes = entry.Notes
-
 	f := huh.NewForm(
 		huh.NewGroup(
 			huh.NewNote().
@@ -67,7 +68,16 @@ func initChangeEntryForm(dump io.Writer, entry EntryDB) changeEntryModel {
 				Title("Notes").
 				Description("The notes associated with the task").
 				Placeholder(entry.Notes).
-				Value(&entryToChange.Notes)))
+				Value(&entryToChange.Notes),
+			huh.NewConfirm().
+				Title("Confirm Changes")))
+	termWidth, termHeight, err  := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil { 
+		fmt.Printf("%s could not get terminal size. Error: %s\n", CharError, err.Error())
+		os.Exit(1)
+	}
+	f.WithHeight(termHeight)
+	f.WithWidth(termWidth)
 	return changeEntryModel{form: f, dump: dump, oldEntry: entry}
 }
 
@@ -90,6 +100,7 @@ func (m changeEntryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, func() tea.Msg {return switchToListModel{} }
 		}	
 	}
+	
 	form, cmd := m.form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {
 		m.form = f

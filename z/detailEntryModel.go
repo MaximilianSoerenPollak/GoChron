@@ -15,6 +15,7 @@ var entryToChange EntryDB
 type changeEntryModel struct {
 	form *huh.Form
 	dump io.Writer
+	oldEntry EntryDB
 }
 
 func (m changeEntryModel) Init() tea.Cmd {
@@ -26,6 +27,11 @@ func initChangeEntryForm(dump io.Writer, entry EntryDB) changeEntryModel {
 	entryToChange.ID = entry.ID
 	entryToChange.Date = entry.Date
 	entryToChange.Hours = entry.Hours
+	entryToChange.Begin = entry.Begin
+	entryToChange.Finish = entry.Finish 
+	entryToChange.Task = entry.Task 
+	entryToChange.Project = entry.Project 
+	entryToChange.Notes = entry.Notes
 
 	f := huh.NewForm(
 		huh.NewGroup(
@@ -62,7 +68,7 @@ func initChangeEntryForm(dump io.Writer, entry EntryDB) changeEntryModel {
 				Description("The notes associated with the task").
 				Placeholder(entry.Notes).
 				Value(&entryToChange.Notes)))
-	return changeEntryModel{form: f, dump: dump}
+	return changeEntryModel{form: f, dump: dump, oldEntry: entry}
 }
 
 

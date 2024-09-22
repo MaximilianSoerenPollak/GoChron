@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/davecgh/go-spew/spew"
+	"golang.org/x/term"
 )
 
 type listModel struct {
@@ -36,7 +37,15 @@ func initEntryListModel(dump io.Writer) listModel {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)
 	}
+
+	termWidth, termHeight, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		fmt.Printf("%s could not get terminal size. Error: %s\n", CharError, err.Error())
+		os.Exit(1)
+	}
 	compactTable := createCompactTable(entries)
+	compactTable.SetHeight(termHeight - heightOffset)
+	compactTable.SetWidth(termWidth - widthOffset)
 	return listModel{
 		table:       compactTable,
 		db:          database,
@@ -94,6 +103,9 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			entrySelected := m.getRowAsEntryDB()
 			return m, func() tea.Msg { return switchToEditModel{entry: entrySelected} }
 		}
+	case tea.WindowSizeMsg:
+		m.table.SetHeight(msg.Height)
+		m.table.SetWidth(msg.Width)
 	}
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd

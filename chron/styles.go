@@ -4,6 +4,11 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var (
+	heightOffset  = 20
+	widthOffset = 20
+)
+
 var baseStyle = lipgloss.NewStyle().
 	BorderStyle(lipgloss.NormalBorder()).
 	BorderForeground(lipgloss.Color("240"))

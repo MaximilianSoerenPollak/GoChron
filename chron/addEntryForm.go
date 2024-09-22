@@ -105,6 +105,10 @@ func (m taskForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		}
+
+	case tea.WindowSizeMsg:
+		m.form.WithHeight(msg.Height)
+		m.form.WithHeight(msg.Width)
 	}
 	form, cmd := m.form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {

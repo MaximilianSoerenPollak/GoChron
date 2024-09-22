@@ -68,3 +68,5 @@ func (m MainModel) View() string {
 	}
 	return m.activeModel.View()
 }
+
+

@@ -1,4 +1,4 @@
-package z
+package chron
 
 import (
 	"context"
@@ -84,7 +84,6 @@ func (db *Database) GetEntryAsString(id int64) (*EntryDB, error) {
 	}
 	return &entryDB, nil
 }
-
 
 func (db *Database) GetEntry(id int64) (*Entry, error) {
 	query := fmt.Sprintf(`SELECT * FROM entries WHERE id = '%d';`, id)

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/MaximilianSoerenPollak/zeit/z"
+	"github.com/MaximilianSoerenPollak/GoChron/chron"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -18,7 +18,7 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	m := z.InitialModel(dump)
+	m := chron.InitialModel(dump)
 	p := tea.NewProgram(&m, tea.WithAltScreen())
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)

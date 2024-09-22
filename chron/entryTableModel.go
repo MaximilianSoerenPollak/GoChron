@@ -1,4 +1,4 @@
-package z
+package chron
 
 import (
 	"database/sql"

@@ -1,4 +1,4 @@
-package z
+package chron
 
 import (
 	"fmt"
@@ -110,10 +110,10 @@ func (entry *Entry) SetDateFromBegining() {
 func (entry *Entry) SetBeginingToNow() error {
 	formatedTime, err := time.Parse("2006-01-02 15:04", time.Now().Truncate(0).Format("2006-01-02 15:04"))
 	if err != nil {
-		return err 
+		return err
 	}
 	entry.Begin = formatedTime
-	entry.Running = true 
+	entry.Running = true
 	return nil
 }
 

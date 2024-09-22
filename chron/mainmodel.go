@@ -1,4 +1,4 @@
-package z
+package chron
 
 import (
 	"fmt"
@@ -12,20 +12,20 @@ import (
 // type SwitchToAddEntryModelMsg tea.Msg
 type switchToAddEntryModel struct{}
 type switchToListModel struct{}
-type switchToEditModel struct{entry EntryDB}
+type switchToEditModel struct{ entry EntryDB }
 
 type MainModel struct {
-	activeModel   tea.Model
-	err           error
-	state         int // 0=Normal, 1=Add, 2=Edit, 3=DetailedView, 4=StatsView, 5=CalendarView, 6=ExportView
-	dump          io.Writer
+	activeModel tea.Model
+	err         error
+	state       int // 0=Normal, 1=Add, 2=Edit, 3=DetailedView, 4=StatsView, 5=CalendarView, 6=ExportView
+	dump        io.Writer
 }
 
 func InitialModel(dump io.Writer) MainModel {
 	return MainModel{
-		activeModel:   initEntryListModel(dump),
-		state:         0,
-		dump:          dump,
+		activeModel: initEntryListModel(dump),
+		state:       0,
+		dump:        dump,
 	}
 }
 
@@ -56,8 +56,8 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.activeModel.Init()
 	case switchToEditModel:
 		m.activeModel = initChangeEntryForm(m.dump, msg.entry)
-		return m, m.activeModel.Init()	
-	}	
+		return m, m.activeModel.Init()
+	}
 	m.activeModel, cmd = m.activeModel.Update(msg)
 	return m, cmd
 }

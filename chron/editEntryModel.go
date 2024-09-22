@@ -1,22 +1,21 @@
-package z
+package chron
 
 import (
 	"fmt"
 	"io"
 	"os"
 
-    "golang.org/x/term"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/davecgh/go-spew/spew"
+	"golang.org/x/term"
 )
 
 var entryToChange EntryDB
 
-
 type changeEntryModel struct {
-	form *huh.Form
-	dump io.Writer
+	form     *huh.Form
+	dump     io.Writer
 	oldEntry EntryDB
 }
 
@@ -30,9 +29,9 @@ func initChangeEntryForm(dump io.Writer, entry EntryDB) changeEntryModel {
 	entryToChange.Date = entry.Date
 	entryToChange.Hours = entry.Hours
 	entryToChange.Begin = entry.Begin
-	entryToChange.Finish = entry.Finish 
-	entryToChange.Task = entry.Task 
-	entryToChange.Project = entry.Project 
+	entryToChange.Finish = entry.Finish
+	entryToChange.Task = entry.Task
+	entryToChange.Project = entry.Project
 	entryToChange.Notes = entry.Notes
 	f := huh.NewForm(
 		huh.NewGroup(
@@ -71,8 +70,8 @@ func initChangeEntryForm(dump io.Writer, entry EntryDB) changeEntryModel {
 				Value(&entryToChange.Notes),
 			huh.NewConfirm().
 				Title("Confirm Changes")))
-	termWidth, termHeight, err  := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil { 
+	termWidth, termHeight, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
 		fmt.Printf("%s could not get terminal size. Error: %s\n", CharError, err.Error())
 		os.Exit(1)
 	}
@@ -80,7 +79,6 @@ func initChangeEntryForm(dump io.Writer, entry EntryDB) changeEntryModel {
 	f.WithWidth(termWidth)
 	return changeEntryModel{form: f, dump: dump, oldEntry: entry}
 }
-
 
 func (m changeEntryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
@@ -97,10 +95,10 @@ func (m changeEntryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 			// This seems to never execute?
 		case "esc":
-			return m, func() tea.Msg {return switchToListModel{} }
-		}	
+			return m, func() tea.Msg { return switchToListModel{} }
+		}
 	}
-	
+
 	form, cmd := m.form.Update(msg)
 	if f, ok := form.(*huh.Form); ok {
 		m.form = f
@@ -108,7 +106,7 @@ func (m changeEntryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	if m.form.State == huh.StateCompleted {
 		entryToChange.FormatTimes()
-		convEntry, err := entryToChange.ConvertToEntry()	
+		convEntry, err := entryToChange.ConvertToEntry()
 		if err != nil {
 			fmt.Printf("%s could not convert entryDB to entry. Error: %s\n", CharError, err.Error())
 			os.Exit(1)
@@ -119,12 +117,10 @@ func (m changeEntryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			fmt.Printf("%s could not add entry to the DB. Error: %s\n", CharError, err.Error())
 			os.Exit(1)
 		}
-		cmds = append(cmds, func() tea.Msg { return switchToListModel{} } )
-	}		
+		cmds = append(cmds, func() tea.Msg { return switchToListModel{} })
+	}
 	return m, tea.Batch(cmds...)
 }
-
-
 
 func (m changeEntryModel) View() string {
 	if m.form.State == huh.StateCompleted {

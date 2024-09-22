@@ -1,11 +1,11 @@
-package z
+package chron
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"os"
-	"errors"
-	"database/sql"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -17,7 +17,6 @@ type taskForm struct {
 	form *huh.Form
 	dump io.Writer
 }
-
 
 var oldProject bool
 var newEntry Entry
@@ -69,7 +68,7 @@ func (m taskForm) Init() tea.Cmd {
 			os.Exit(1)
 		}
 	}
-	if !taskRunning{
+	if !taskRunning {
 		return m.form.Init()
 	}
 	err = huh.NewForm(huh.NewGroup(huh.NewConfirm().Title("Stop running task and start new one?").Value(&stopTask))).Run()
@@ -77,8 +76,8 @@ func (m taskForm) Init() tea.Cmd {
 		fmt.Printf("something went wrong running the confirm form. Error: %s", err.Error())
 		os.Exit(1)
 	}
-	if !stopTask{
-		return func() tea.Msg {return switchToListModel{}}	
+	if !stopTask {
+		return func() tea.Msg { return switchToListModel{} }
 	}
 	err = runningEntry.SetFinish()
 	if err != nil {
@@ -98,7 +97,7 @@ func (m taskForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.dump != nil {
 		spew.Fdump(m.dump, fmt.Sprintf("taskForm: %s", msg))
 	}
-	
+
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -120,7 +119,7 @@ func (m taskForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			fmt.Printf("%s could not add entry to the DB. Error: %s\n", CharError, err.Error())
 			os.Exit(1)
 		}
-		cmds = append(cmds, func() tea.Msg { return switchToListModel{} } )
+		cmds = append(cmds, func() tea.Msg { return switchToListModel{} })
 		// return m, func() tea.Msg { return switchToListModel{} }
 	}
 
@@ -145,5 +144,3 @@ func createNewlyAddedTaskList() *list.List {
 		"Notes", list.New(newEntry.Notes),
 	)
 }
-
-

@@ -1,4 +1,4 @@
-package z
+package chron
 
 import (
 	"github.com/charmbracelet/lipgloss"

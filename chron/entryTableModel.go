@@ -145,11 +145,16 @@ func createExpandedTable(entries []EntryDB) table.Model {
 		table.NewFlexColumn(columnKeyDate, "Date", 1).WithFiltered(true),
 		table.NewFlexColumn(columnKeyProject, "Project", 2).WithFiltered(true),
 		table.NewFlexColumn(columnKeyTask, "Task", 3).WithFiltered(true),
-		table.NewFlexColumn(columnKeyHours, "Hours", 1),
+		table.NewFlexColumn(columnKeyHours, "Hours", 1).WithFormatString("%.2f"),
 		table.NewFlexColumn(columnKeyNotes, "Notes", 3).WithFiltered(true),
 	}
 	var rows []table.Row
 	for _, v := range entries {
+		fmtHrs, err := strconv.ParseFloat(v.Hours, 64)
+		if err != nil {
+			fmt.Printf("%s could not convert hours into float. Hours: %s Error: %s", CharError, v.Hours, err.Error())
+			os.Exit(1)
+		}
 		r := table.NewRow(
 			table.RowData{
 				columnKeyID:      v.ID,
@@ -158,7 +163,7 @@ func createExpandedTable(entries []EntryDB) table.Model {
 				columnKeyDate:    v.Date,
 				columnKeyProject: v.Project,
 				columnKeyTask:    v.Task,
-				columnKeyHours:   v.Hours,
+				columnKeyHours:   fmtHrs,
 				columnKeyNotes:   v.Notes,
 			})
 		rows = append(rows, r)
@@ -180,18 +185,23 @@ func createCompactTable(entries []EntryDB) table.Model {
 		table.NewFlexColumn(columnKeyDate, "Date", 1).WithFiltered(true),
 		table.NewFlexColumn(columnKeyProject, "Project", 2).WithFiltered(true),
 		table.NewFlexColumn(columnKeyTask, "Task", 3).WithFiltered(true),
-		table.NewFlexColumn(columnKeyHours, "Hours", 1),
+		table.NewFlexColumn(columnKeyHours, "Hours", 1).WithFormatString("%.2f"),
 		table.NewFlexColumn(columnKeyNotes, "Notes", 3).WithFiltered(true),
 	}
 	var rows []table.Row
 	for _, v := range entries {
+		fmtHrs, err := strconv.ParseFloat(v.Hours, 64)
+		if err != nil {
+			fmt.Printf("%s could not convert hours into float. Hours: %s Error: %s", CharError, v.Hours, err.Error())
+			os.Exit(1)
+		}
 		r := table.NewRow(
 			table.RowData{
 				columnKeyID:      v.ID,
 				columnKeyDate:    v.Date,
 				columnKeyProject: v.Project,
 				columnKeyTask:    v.Task,
-				columnKeyHours:   v.Hours,
+				columnKeyHours:   fmtHrs,
 				columnKeyNotes:   v.Notes,
 			})
 		rows = append(rows, r)

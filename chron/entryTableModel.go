@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/evertras/bubble-table/table"
 	"golang.org/x/term"
@@ -81,10 +82,10 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	// Keypresses not effected by the mode.
 	// Check if we are in filtered mode.
-	if m.table.GetIsFilterInputFocused() {
-		m.table, cmd = m.table.Update(msg)
-		return m, cmd
-	}
+	// if m.table.GetIsFilterInputFocused() {
+	// 	m.table, cmd = m.table.Update(msg)
+	// 	return m, cmd
+	// }
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -109,7 +110,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter":
 			return m, tea.Batch(
-				tea.Printf("Let's go to %v!", m.table.HighlightedRow()),
+				tea.Printf("Let's go to %v!", m.table.HighlightedRow().Data),
 			)
 		case "a":
 			oldProject = true

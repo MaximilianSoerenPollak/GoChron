@@ -35,21 +35,40 @@ type EntryDB struct {
 	Running bool
 }
 
-func (edb *EntryDB) FormatTimes() error {
-	parsedFinish, err := dateparse.ParseAny(edb.Finish)
-	if err != nil {
-		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
-		return err
-	}
+func (edb *EntryDB) parseDates() (time.Time, time.Time, error) {
 	parsedBegining, err := dateparse.ParseAny(edb.Begin)
 	if err != nil {
 		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
-		return err
+		return time.Time{}, time.Time{}, err
+	}
+	parsedFinish, err := dateparse.ParseAny(edb.Finish)
+	if err != nil {
+		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
+		return time.Time{}, time.Time{}, err
+	}
+	return parsedBegining, parsedFinish, nil
+}
+
+func (edb *EntryDB) FormatTimes() error {
+	parsedBegining, parsedFinish, err := edb.parseDates()
+	if err != nil {
+		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
+		return err 
 	}
 	edb.Finish = parsedFinish.Format("2006-01-02 15:04:05")
 	edb.Begin = parsedBegining.Format("2006-01-02 15:04:05")
 	return nil
 }
+
+// func (edb *EntryDB) calculateDate() string {
+// 	parsedBegining, parsedFinish, err := edb.parseDates()
+// 	if err != nil {
+// 		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
+// 		os.Exit(1)
+// 	}
+// 	parsedFinish.Sub 
+// 	}
+// }
 
 func (edb *EntryDB) ConvertToEntry() (*Entry, error) {
 	entry := Entry{}

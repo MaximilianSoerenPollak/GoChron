@@ -8,10 +8,26 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/evertras/bubble-table/table"
 	"golang.org/x/term"
+)
+
+const (
+	columnKeyID      = "id"
+	columnKeyDate    = "date"
+	columnKeyStart   = "start"
+	columnKeyFinish  = "finish"
+	columnKeyProject = "project"
+	columnKeyTask    = "task"
+	columnKeyHours   = "hours"
+	columnKeyNotes   = "notes"
+)
+
+var (
+	termWidth  int
+	termHeight int
 )
 
 type listModel struct {
@@ -26,6 +42,16 @@ func (m listModel) Init() tea.Cmd {
 	return nil
 }
 
+func setTerminalSize() {
+	tW, tH, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		fmt.Printf("%s could not get terminal size. Error: %s\n", CharError, err.Error())
+		os.Exit(1)
+	}
+	termWidth = tW
+	termHeight = tH
+}
+
 func initEntryListModel(dump io.Writer) listModel {
 	database, err := InitDB()
 	if err != nil {
@@ -37,15 +63,8 @@ func initEntryListModel(dump io.Writer) listModel {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)
 	}
-
-	termWidth, termHeight, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		fmt.Printf("%s could not get terminal size. Error: %s\n", CharError, err.Error())
-		os.Exit(1)
-	}
+	setTerminalSize()
 	compactTable := createCompactTable(entries)
-	compactTable.SetHeight(termHeight - heightOffset)
-	compactTable.SetWidth(termWidth - widthOffset)
 	return listModel{
 		table:       compactTable,
 		db:          database,
@@ -60,34 +79,38 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		spew.Fdump(m.dump, fmt.Sprintf("EntryModel: %s", msg))
 	}
 	var cmd tea.Cmd
+	// Keypresses not effected by the mode.
+	// Check if we are in filtered mode.
+	if m.table.GetIsFilterInputFocused() {
+		m.table, cmd = m.table.Update(msg)
+		return m, cmd
+	}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		case "esc":
-			if m.table.Focused() {
-				m.table.Blur()
+			if m.table.GetFocused() {
+				m.table.Focused(false)
 			} else {
-				m.table.Focus()
+				m.table.Focused(true)
 			}
-		case "enter":
-			return m, tea.Batch(
-				tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
-			)
 		case "ctrl+v":
 			// Switch from showing 'start / finish' to not showing it.
 			if m.compactView {
 				expTable := createExpandedTable(m.entries)
 				m.table = expTable
-				m.table.UpdateViewport()
 				m.compactView = false
 			} else {
 				compTable := createCompactTable(m.entries)
 				m.table = compTable
-				m.table.UpdateViewport()
 				m.compactView = true
 			}
+		case "enter":
+			return m, tea.Batch(
+				tea.Printf("Let's go to %v!", m.table.HighlightedRow()),
+			)
 		case "a":
 			oldProject = true
 			_, err := database.GetUniqueProjects()
@@ -103,86 +126,91 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			entrySelected := m.getRowAsEntryDB()
 			return m, func() tea.Msg { return switchToEditModel{entry: entrySelected} }
 		}
-	case tea.WindowSizeMsg:
-		m.table.SetHeight(msg.Height)
-		m.table.SetWidth(msg.Width)
+		// case tea.WindowSizeMsg:
+		// 	m.table.SetHeight(msg.Height)
+		// 	m.table.SetWidth(msg.Width)
 	}
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
 }
 
 func (m listModel) View() string {
-	return baseStyle.Render(m.table.View()) + "\n  " + m.table.HelpView() + "\n"
+	return baseStyle.Render(m.table.View())
 }
 
 func createExpandedTable(entries []EntryDB) table.Model {
 	columns := []table.Column{
-		{Title: "ID", Width: 5},
-		{Title: "Date", Width: 10},
-		{Title: "Start", Width: 20},
-		{Title: "Finish", Width: 20},
-		{Title: "Project", Width: 30},
-		{Title: "Task", Width: 40},
-		{Title: "Hours", Width: 20},
-		{Title: "Notes", Width: 40},
+		table.NewFlexColumn(columnKeyStart, "Start", 2).WithFiltered(true),
+		table.NewFlexColumn(columnKeyFinish, "Finish", 2).WithFiltered(true),
+		table.NewFlexColumn(columnKeyDate, "Date", 1).WithFiltered(true),
+		table.NewFlexColumn(columnKeyProject, "Project", 2).WithFiltered(true),
+		table.NewFlexColumn(columnKeyTask, "Task", 3).WithFiltered(true),
+		table.NewFlexColumn(columnKeyHours, "Hours", 1),
+		table.NewFlexColumn(columnKeyNotes, "Notes", 3).WithFiltered(true),
 	}
 	var rows []table.Row
 	for _, v := range entries {
-		err := v.FormatTimes()
-		if err != nil {
-			fmt.Printf("Encountered an error formatting times")
-			fmt.Printf("%s %+v\n", CharError, err)
-			os.Exit(1)
-		}
-		r := table.Row{
-			v.ID, v.Date, v.Begin, v.Finish, v.Project, v.Task, v.Hours, v.Notes}
+		r := table.NewRow(
+			table.RowData{
+				columnKeyID:      v.ID,
+				columnKeyStart:   v.Begin,
+				columnKeyFinish:  v.Finish,
+				columnKeyDate:    v.Date,
+				columnKeyProject: v.Project,
+				columnKeyTask:    v.Task,
+				columnKeyHours:   v.Hours,
+				columnKeyNotes:   v.Notes,
+			})
 		rows = append(rows, r)
 	}
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(7),
-	)
-
-	s := table.DefaultStyles()
-	s.Header = tableHeaderStyle
-	s.Selected = selectedEntryStyle
-	t.SetStyles(s)
+	keys := table.DefaultKeyMap()
+	t := table.New(columns).
+		WithRows(rows).
+		Filtered(true).
+		SortByDesc(columnKeyID).
+		WithBaseStyle(baseStyle).
+		WithKeyMap(keys).
+		WithTargetWidth(termWidth).
+		Focused(true)
 	return t
 }
 
 func createCompactTable(entries []EntryDB) table.Model {
 	columns := []table.Column{
-		{Title: "ID", Width: 5},
-		{Title: "Date", Width: 20},
-		{Title: "Project", Width: 30},
-		{Title: "Task", Width: 40},
-		{Title: "Hours", Width: 20},
-		{Title: "Notes", Width: 40},
+		table.NewFlexColumn(columnKeyDate, "Date", 1).WithFiltered(true),
+		table.NewFlexColumn(columnKeyProject, "Project", 2).WithFiltered(true),
+		table.NewFlexColumn(columnKeyTask, "Task", 3).WithFiltered(true),
+		table.NewFlexColumn(columnKeyHours, "Hours", 1),
+		table.NewFlexColumn(columnKeyNotes, "Notes", 3).WithFiltered(true),
 	}
 	var rows []table.Row
 	for _, v := range entries {
-		r := table.Row{
-			v.ID, v.Date, v.Project, v.Task, v.Hours, v.Notes}
+		r := table.NewRow(
+			table.RowData{
+				columnKeyID:      v.ID,
+				columnKeyDate:    v.Date,
+				columnKeyProject: v.Project,
+				columnKeyTask:    v.Task,
+				columnKeyHours:   v.Hours,
+				columnKeyNotes:   v.Notes,
+			})
 		rows = append(rows, r)
 	}
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(7),
-	)
-	s := table.DefaultStyles()
-	s.Header = tableHeaderStyle
-	s.Selected = selectedEntryStyle
-	t.SetStyles(s)
+	keys := table.DefaultKeyMap()
+	t := table.New(columns).
+		Filtered(true).
+		WithRows(rows).
+		Focused(true).
+		WithBaseStyle(baseStyle).
+		WithTargetWidth(termWidth).
+		SortByDesc(columnKeyID).
+		WithKeyMap(keys)
 	return t
 }
 
 func (m listModel) getRowAsEntryDB() EntryDB {
-	selected := m.table.SelectedRow()
-	idConv, err := strconv.Atoi(selected[0])
+	selected := m.table.HighlightedRow()
+	idConv, err := strconv.Atoi(selected.Data[columnKeyID].(string))
 	if err != nil {
 		fmt.Printf("%s could not convert id. Error: %s", CharError, err.Error())
 		os.Exit(1)

@@ -17,14 +17,12 @@ type switchToEditModel struct{ entry EntryDB }
 type MainModel struct {
 	activeModel tea.Model
 	err         error
-	state       int // 0=Normal, 1=Add, 2=Edit, 3=DetailedView, 4=StatsView, 5=CalendarView, 6=ExportView
 	dump        io.Writer
 }
 
 func InitialModel(dump io.Writer) MainModel {
 	return MainModel{
 		activeModel: initEntryListModel(dump),
-		state:       0,
 		dump:        dump,
 	}
 }

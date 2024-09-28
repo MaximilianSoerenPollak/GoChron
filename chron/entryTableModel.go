@@ -8,8 +8,9 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/evertras/bubble-table/table"
 	"golang.org/x/term"
@@ -31,10 +32,25 @@ var (
 	termHeight int
 )
 
+func createFullHelpString(etk table.KeyMap) [][]key.Binding {
+	return [][]key.Binding{
+		{etk.RowDown, etk.RowUp, etk.RowSelectToggle},
+		{etk.PageDown, etk.PageUp, etk.PageFirst, etk.PageLast},
+		{etk.Filter, etk.FilterBlur, etk.FilterClear, etk.ScrollRight, etk.ScrollLeft},
+	}
+}
+
+func createShortHelpString(etk table.KeyMap) []key.Binding {
+	return []key.Binding{
+		etk.RowDown, etk.RowUp, etk.RowSelectToggle, etk.Filter, etk.PageDown, etk.PageUp, etk.Filter, etk.FilterBlur, etk.FilterClear,
+	}
+}
+
 type listModel struct {
 	table       table.Model
 	entries     []EntryDB
 	db          *Database
+	help        help.Model
 	compactView bool
 	dump        io.Writer
 }
@@ -70,6 +86,7 @@ func initEntryListModel(dump io.Writer) listModel {
 		table:       compactTable,
 		db:          database,
 		entries:     entries,
+		help:        help.New(),
 		compactView: true,
 		dump:        dump,
 	}
@@ -136,7 +153,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m listModel) View() string {
-	return baseStyle.Render(m.table.View())
+	return baseStyle.Render(m.table.View()) + "\n" + m.help.ShortHelpView(createShortHelpString(m.table.KeyMap()))
 }
 
 func createExpandedTable(entries []EntryDB) table.Model {

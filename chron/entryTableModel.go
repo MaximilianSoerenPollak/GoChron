@@ -27,93 +27,28 @@ const (
 	columnKeyNotes   = "notes"
 )
 
-type entryTableKeyMap struct {
-	RowDown key.Binding
-	RowUp   key.Binding
-
-	RowSelectToggle key.Binding
-
-	PageDown  key.Binding
-	PageUp    key.Binding
-	PageFirst key.Binding
-	PageLast  key.Binding
-
-	// Filter allows the user to start typing and filter the rows.
-	Filter key.Binding
-
-	// FilterBlur is the key that stops the user's input from typing into the filter.
-	FilterBlur key.Binding
-
-	// FilterClear will clear the filter while it's blurred.
-	FilterClear key.Binding
-
-	// ScrollRight will move one column to the right when overflow occurs.
-	ScrollRight key.Binding
-
-	// ScrollLeft will move one column to the left when overflow occurs.
-	ScrollLeft key.Binding
-}
-
-// DefaultKeyMap returns a set of sensible defaults for controlling a focused table.
-func createDefaultEntryTableKeyMap() entryTableKeyMap {
-	return entryTableKeyMap{
-		RowDown: key.NewBinding(
-			key.WithKeys("down", "j"),
-			key.WithHelp("↓/j", "move down"),
-		),
-		RowUp: key.NewBinding(
-			key.WithKeys("up", "k"),
-			key.WithHelp("↑/k", "move up"),
-		),
-		RowSelectToggle: key.NewBinding(
-			key.WithKeys(" ", "enter"),
-			key.WithHelp("<space>/enter", "select row"),	
-		),
-		Filter: key.NewBinding(
-			key.WithKeys("/"),
-			key.WithHelp("/", "filter"),
-		),
-		FilterBlur: key.NewBinding(
-			key.WithKeys("enter", "esc"),
-			key.WithHelp("enter/esc", "unfocus"),
-		),
-		FilterClear: key.NewBinding(
-			key.WithKeys("esc"),
-			key.WithHelp("esc", "clear filter"),
-		),
-		ScrollRight: key.NewBinding(
-			key.WithKeys("shift+right"),
-			key.WithHelp("shift+→", "scroll right"),
-		),
-		ScrollLeft: key.NewBinding(
-			key.WithKeys("shift+left"),
-			key.WithHelp("shift+←", "scroll left"),
-		),
-	}
-}
-
 var (
 	termWidth  int
 	termHeight int
 )
 
-func (etk entryTableKeyMap) FullHelp() [][]key.Binding {
+func (lm listModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{etk.RowDown, etk.RowUp, etk.RowSelectToggle},
-		{etk.PageDown, etk.PageUp, etk.PageFirst, etk.PageLast},
-		{etk.Filter, etk.FilterBlur, etk.FilterClear, etk.ScrollRight, etk.ScrollLeft},
+		{lm.keys.RowDown, lm.keys.RowUp, lm.keys.RowSelectToggle},
+		{lm.keys.PageDown, lm.keys.PageUp, lm.keys.PageFirst, lm.keys.PageLast},
+		{lm.keys.Filter, lm.keys.FilterBlur, lm.keys.FilterClear, lm.keys.ScrollRight, lm.keys.ScrollLeft},
 	}
 }
 
-func (etk entryTableKeyMap) ShortHelp() []key.Binding {
+func (lm listModel) ShortHelp() []key.Binding {
 	return []key.Binding{
-		etk.RowDown, etk.RowUp, etk.RowSelectToggle, etk.PageDown, etk.PageUp, etk.Filter, etk.FilterBlur, etk.FilterClear,
+		lm.keys.RowDown, lm.keys.RowUp, lm.keys.RowSelectToggle, lm.keys.PageDown, lm.keys.PageUp, lm.keys.Filter, lm.keys.FilterBlur, lm.keys.FilterClear,
 	}
 }
 
 type listModel struct {
 	table       table.Model
-	keys        entryTableKeyMap
+	keys        table.KeyMap
 	entries     []EntryDB
 	db          *Database
 	help        help.Model
@@ -151,7 +86,7 @@ func initEntryListModel(dump io.Writer) listModel {
 	return listModel{
 		table:       compactTable,
 		db:          database,
-		keys: 		 createDefaultEntryTableKeyMap(),
+		keys:        table.DefaultKeyMap(),
 		entries:     entries,
 		help:        help.New(),
 		compactView: true,
@@ -164,12 +99,6 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		spew.Fdump(m.dump, fmt.Sprintf("EntryModel: %s", msg))
 	}
 	var cmd tea.Cmd
-	// Keypresses not effected by the mode.
-	// Check if we are in filtered mode.
-	// if m.table.GetIsFilterInputFocused() {
-	// 	m.table, cmd = m.table.Update(msg)
-	// 	return m, cmd
-	// }
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -220,7 +149,7 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m listModel) View() string {
-	helpView := m.help.View(m.keys)
+	helpView := m.help.View(m)
 	return baseStyle.Render(m.table.View() + "\n" + helpView)
 }
 
@@ -254,13 +183,16 @@ func createExpandedTable(entries []EntryDB) table.Model {
 			})
 		rows = append(rows, r)
 	}
+	keys := table.DefaultKeyMap()
 	t := table.New(columns).
 		WithRows(rows).
 		Filtered(true).
 		SortByDesc(columnKeyID).
 		WithBaseStyle(baseStyle).
 		WithTargetWidth(termWidth).
-		Focused(true)
+		Focused(true).
+		WithKeyMap(keys)
+
 	return t
 }
 
@@ -290,13 +222,15 @@ func createCompactTable(entries []EntryDB) table.Model {
 			})
 		rows = append(rows, r)
 	}
+	keys := table.DefaultKeyMap()
 	t := table.New(columns).
 		Filtered(true).
 		WithRows(rows).
 		Focused(true).
 		WithBaseStyle(baseStyle).
 		WithTargetWidth(termWidth).
-		SortByDesc(columnKeyID)
+		SortByDesc(columnKeyID).
+		WithKeyMap(keys)
 	return t
 }
 

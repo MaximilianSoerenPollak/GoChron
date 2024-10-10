@@ -53,22 +53,12 @@ func (edb *EntryDB) FormatTimes() error {
 	parsedBegining, parsedFinish, err := edb.parseDates()
 	if err != nil {
 		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
-		return err 
+		return err
 	}
 	edb.Finish = parsedFinish.Format("2006-01-02 15:04:05")
 	edb.Begin = parsedBegining.Format("2006-01-02 15:04:05")
 	return nil
 }
-
-// func (edb *EntryDB) calculateDate() string {
-// 	parsedBegining, parsedFinish, err := edb.parseDates()
-// 	if err != nil {
-// 		fmt.Printf("%s could not convert finish time to standard. Error: %s\n", CharError, err.Error())
-// 		os.Exit(1)
-// 	}
-// 	parsedFinish.Sub 
-// 	}
-// }
 
 func (edb *EntryDB) ConvertToEntry() (*Entry, error) {
 	entry := Entry{}

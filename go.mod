@@ -3,12 +3,14 @@ module github.com/MaximilianSoerenPollak/GoChron
 go 1.22.3
 
 require (
+	github.com/NimbleMarkets/ntcharts v0.1.2
 	github.com/araddon/dateparse v0.0.0-20210429162001-6b43995a97de
 	github.com/charmbracelet/bubbles v0.20.0
 	github.com/charmbracelet/bubbletea v1.1.0
 	github.com/charmbracelet/huh v0.6.0
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/davecgh/go-spew v1.1.1
+	github.com/evertras/bubble-table v0.17.0
 	github.com/gookit/color v1.5.4
 	github.com/jinzhu/now v1.1.5
 	github.com/mattn/go-sqlite3 v1.14.22
@@ -26,8 +28,8 @@ require (
 	github.com/charmbracelet/x/term v0.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
-	github.com/evertras/bubble-table v0.17.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/lrstanley/bubblezone v0.0.0-20240125042004-b7bafc493195 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect

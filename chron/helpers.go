@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -153,4 +155,12 @@ func GetGitLog(repo string, since time.Time, until time.Time) (string, string, e
 
 	stdoutStr, stderrStr := stdout.String(), stderr.String()
 	return stdoutStr, stderrStr, nil
+}
+
+func prettyPrintMap(v interface{}) (err error) {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err == nil {
+		fmt.Println(string(b))
+	}
+	return
 }

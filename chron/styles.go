@@ -17,6 +17,8 @@ var paddingStyle = lipgloss.NewStyle().
 
 var centerAlignStyle = lipgloss.NewStyle().Align(lipgloss.Center)
 
+var barchartDefaultStyle = lipgloss.NewStyle().BorderForeground(lipgloss.Color("240")).Align(lipgloss.Center)
+
 // BorderBackground(lipgloss.Color("#81b29a")).
 //
 //	BorderForeground(lipgloss.Color("#81b29a")).

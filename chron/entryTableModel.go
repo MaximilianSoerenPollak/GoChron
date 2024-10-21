@@ -139,7 +139,10 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "e":
 			entrySelected := m.getRowAsEntryDB()
 			return m, func() tea.Msg { return switchToEditModel{entry: entrySelected} }
+		case "t":
+			return m, func() tea.Msg { return switchToCalendarModel{} }
 		}
+
 		// case tea.WindowSizeMsg:
 		// 	m.table.SetHeight(msg.Height)
 		// 	m.table.SetWidth(msg.Width)

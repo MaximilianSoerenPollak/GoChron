@@ -112,6 +112,7 @@ func (m changeEntryModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			os.Exit(1)
 		}
 		convEntry.SetDateFromBegining()
+		convEntry.Hours = convEntry.GetDuration()
 		err = database.UpdateEntry(*convEntry)
 		if err != nil {
 			fmt.Printf("%s could not add entry to the DB. Error: %s\n", CharError, err.Error())

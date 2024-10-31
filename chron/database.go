@@ -422,3 +422,117 @@ func createDefaultTables(db *sql.DB) error {
 	}
 	return nil
 }
+
+// Will give summed hours per date, irrgeardless of project
+// Returns 'date | SUM(hours)'
+func (db *Database) GetHoursTrackedPerDay(cf calendarTimeFrame) ([]dailyHours, error) {
+	query := fmt.Sprintf(`SELECT date, SUM(hours) FROM entries 
+						WHERE start > '%s' 
+						AND start < '%s'
+						GROUP BY date
+						ORDER BY START ASC;`, cf.since.String(), cf.until.String())
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		fmt.Printf("ran into an error when reading the database. Error: %s", err.Error())
+		return nil, err
+	}
+	var dailyEntries []dailyHours
+	for rows.Next() {
+		var dailyEntry dailyHours
+		var hoursStr string
+		err := rows.Scan(
+			&dailyEntry.Date,
+			&hoursStr,
+		)
+		if err != nil {
+			return nil, err
+		}
+		hoursDec, err := decimal.NewFromString(hoursStr)
+		if err != nil {
+			fmt.Printf("Could not convert hours from str to decimal. Error: %s", err.Error())
+			return nil, err
+		}
+		dailyEntry.Hours = hoursDec
+		dailyEntries = append(dailyEntries, dailyEntry)
+	}
+	return dailyEntries, nil
+}
+
+func (db *Database) GetHoursTrackedPerDayAndProject(cf calendarTimeFrame) ([]dailyProjectHours, error) {
+	query := fmt.Sprintf(`SELECT date, project SUM(hours) FROM entries 
+						WHERE start < '%s' 
+						AND start > '%s'
+						GROUP BY date, project
+						ORDER BY START ASC;`, cf.since.String(), cf.until.String())
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		rows.Close()
+		return nil, err
+	}
+	var dailyEntries []dailyProjectHours
+	for rows.Next() {
+		var dailyProjectEntry dailyProjectHours 
+		var hoursStr string
+		err := rows.Scan(
+			&dailyProjectEntry.Date,
+			&dailyProjectEntry.Project,
+			&hoursStr,
+		)
+		if err != nil {
+			return nil, err
+		}
+		hoursDec, err := decimal.NewFromString(hoursStr)
+		if err != nil {
+			fmt.Printf("Could not convert hours from str to decimal. Error: %s", err.Error())
+			return nil, err
+		}
+		dailyProjectEntry.Hours = hoursDec
+		dailyEntries = append(dailyEntries, dailyProjectEntry)
+	}
+	return dailyEntries, nil
+}
+
+
+// Unsure if 'max' or 'sum' of hours even works as it's a 'string' type in the DB
+// TODO: Test
+func (db *Database) GetLongestEntryPerDay(cf calendarTimeFrame) ([]Entry, error){	
+	query := fmt.Sprintf(`SELECT *, MAX(hours), FROM entries 
+						WHERE start < '%s' 
+						AND start > '%s'
+						GROUP BY date 
+						ORDER BY START ASC;`, cf.since.String(), cf.until.String())
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		rows.Close()
+		return nil, err
+	}
+	var entries []Entry
+	for rows.Next() {
+		var entryDB EntryDB
+		err := rows.Scan(
+			&entryDB.ID,
+			&entryDB.Date,
+			&entryDB.Begin,
+			&entryDB.Finish,
+			&entryDB.Hours,
+			&entryDB.Project,
+			&entryDB.Task,
+			&entryDB.Notes,
+			&entryDB.Running)
+		if err != nil {
+			return nil, err
+		}
+		entry, err := entryDB.ConvertToEntry()
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, *entry)
+	}
+	return entries, nil
+}

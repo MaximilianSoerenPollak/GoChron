@@ -10,7 +10,7 @@ require (
 	github.com/charmbracelet/huh v0.6.0
 	github.com/charmbracelet/lipgloss v0.13.0
 	github.com/davecgh/go-spew v1.1.1
-	github.com/evertras/bubble-table v0.17.0
+	github.com/evertras/bubble-table v0.17.1
 	github.com/gookit/color v1.5.4
 	github.com/jinzhu/now v1.1.5
 	github.com/mattn/go-sqlite3 v1.14.22

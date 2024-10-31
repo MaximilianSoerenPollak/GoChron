@@ -2,14 +2,14 @@ package chron
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
-	"encoding/json"
-	"fmt"
 	"time"
 )
 

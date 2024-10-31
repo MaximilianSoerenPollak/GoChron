@@ -100,6 +100,18 @@ type EntriesGroupedByDay struct {
 	Hours    decimal.Decimal
 }
 
+type dailyHours struct {
+	Date  string
+	Hours decimal.Decimal
+}
+
+type dailyProjectHours struct {
+	Date    string
+	Hours   decimal.Decimal
+	Project string
+}
+
+
 func NewEntry(project string, task string) Entry {
 
 	newEntry := Entry{}

@@ -42,7 +42,14 @@ func (lm listModel) FullHelp() [][]key.Binding {
 
 func (lm listModel) ShortHelp() []key.Binding {
 	return []key.Binding{
-		lm.keys.RowDown, lm.keys.RowUp, lm.keys.RowSelectToggle, lm.keys.PageDown, lm.keys.PageUp, lm.keys.Filter, lm.keys.FilterBlur, lm.keys.FilterClear,
+		lm.keys.RowDown,
+		lm.keys.RowUp,
+		lm.keys.RowSelectToggle,
+		lm.keys.PageDown,
+		lm.keys.PageUp,
+		lm.keys.Filter,
+		lm.keys.FilterBlur,
+		lm.keys.FilterClear,
 	}
 }
 
@@ -170,7 +177,12 @@ func createExpandedTable(entries []EntryDB) table.Model {
 	for _, v := range entries {
 		fmtHrs, err := strconv.ParseFloat(v.Hours, 64)
 		if err != nil {
-			fmt.Printf("%s could not convert hours into float. Hours: %s Error: %s", CharError, v.Hours, err.Error())
+			fmt.Printf(
+				"%s could not convert hours into float. Hours: %s Error: %s",
+				CharError,
+				v.Hours,
+				err.Error(),
+			)
 			os.Exit(1)
 		}
 		r := table.NewRow(
@@ -211,7 +223,12 @@ func createCompactTable(entries []EntryDB) table.Model {
 	for _, v := range entries {
 		fmtHrs, err := strconv.ParseFloat(v.Hours, 64)
 		if err != nil {
-			fmt.Printf("%s could not convert hours into float. Hours: %s Error: %s", CharError, v.Hours, err.Error())
+			fmt.Printf(
+				"%s could not convert hours into float. Hours: %s Error: %s",
+				CharError,
+				v.Hours,
+				err.Error(),
+			)
 			os.Exit(1)
 		}
 		r := table.NewRow(

@@ -475,7 +475,7 @@ func (db *Database) GetHoursTrackedPerDayAndProject(cf calendarTimeFrame) ([]dai
 	}
 	var dailyEntries []dailyProjectHours
 	for rows.Next() {
-		var dailyProjectEntry dailyProjectHours 
+		var dailyProjectEntry dailyProjectHours
 		var hoursStr string
 		err := rows.Scan(
 			&dailyProjectEntry.Date,
@@ -496,10 +496,9 @@ func (db *Database) GetHoursTrackedPerDayAndProject(cf calendarTimeFrame) ([]dai
 	return dailyEntries, nil
 }
 
-
 // Unsure if 'max' or 'sum' of hours even works as it's a 'string' type in the DB
 // TODO: Test
-func (db *Database) GetLongestEntryPerDay(cf calendarTimeFrame) ([]Entry, error){	
+func (db *Database) GetLongestEntryPerDay(cf calendarTimeFrame) ([]Entry, error) {
 	query := fmt.Sprintf(`SELECT *, MAX(hours), FROM entries 
 						WHERE start < '%s' 
 						AND start > '%s'

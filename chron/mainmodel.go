@@ -14,6 +14,7 @@ type switchToAddEntryModel struct{}
 type switchToListModel struct{}
 type switchToEditModel struct{ entry EntryDB }
 type switchToCalendarModel struct{}
+type switchToImportModel struct{}
 
 type MainModel struct {
 	activeModel tea.Model
@@ -59,6 +60,9 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case switchToCalendarModel:
 		m.activeModel = initCalendarModel(m.dump)
 		return m, m.activeModel.Init()
+	case switchToImportModel:
+		m.activeModel = initImportModel(m.dump)
+		return m, m.activeModel.Init()	
 	}
 	m.activeModel, cmd = m.activeModel.Update(msg)
 	return m, cmd

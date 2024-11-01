@@ -90,6 +90,8 @@ func initEntryListModel(dump io.Writer) listModel {
 	}
 	setTerminalSize()
 	compactTable := createCompactTable(entries)
+	compactTable.WithMaxTotalWidth(termWidth)
+	compactTable.WithMinimumHeight(termHeight/3)
 	return listModel{
 		table:       compactTable,
 		db:          database,
@@ -148,6 +150,8 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, func() tea.Msg { return switchToEditModel{entry: entrySelected} }
 		case "t":
 			return m, func() tea.Msg { return switchToCalendarModel{} }
+		case "i":
+			return m, func() tea.Msg { return switchToImportModel{} }
 		}
 
 		// case tea.WindowSizeMsg:

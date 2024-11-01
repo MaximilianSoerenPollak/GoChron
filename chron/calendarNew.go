@@ -69,10 +69,10 @@ type calendarTimeFrame struct {
 }
 
 func createDefaultCalendarTimeFrame() calendarTimeFrame {
-	twoWeeksAgo := time.Now().UTC().Add(-1736 * time.Hour)
+	twoWeeksAgo := time.Now().UTC().Add(-336 * time.Hour)
 	return calendarTimeFrame{
 		since: twoWeeksAgo,
-		until: time.Now().UTC().Add(2 * time.Hour),
+		until: time.Now().UTC(),
 	}
 }
 
@@ -121,19 +121,20 @@ func (m calendarModel) View() string {
 }
 
 // Function errors
-// func (m *calendarModel) createDefaultCalendarChart() {
-// 	// Getting all entries.
-// 	entries, err := m.db.GetAllEntries()
-// 	if err != nil {
-// 		fmt.Printf("%s %+v\n", CharError, err)
-// 		os.Exit(1)
-// 	}
-// 	// Filtering entries
-// 	defaultFilter := createDefaultCalendarFilter()
-// 	// filteredEntries := filterEntries(defaultFilter, entries)
-// 	// TODO: We need to filter the entries before this
-// 	// barDataDayTotal, barDataDayProject := calculatePerDayData(filteredEntries)
-// 	//
+//
+//	func (m *calendarModel) createDefaultCalendarChart() {
+//		// Getting all entries.
+//		entries, err := m.db.GetAllEntries()
+//		if err != nil {
+//			fmt.Printf("%s %+v\n", CharError, err)
+//			os.Exit(1)
+//		}
+//		// Filtering entries
+//		defaultFilter := createDefaultCalendarFilter()
+//		// filteredEntries := filterEntries(defaultFilter, entries)
+//		// TODO: We need to filter the entries before this
+//		// barDataDayTotal, barDataDayProject := calculatePerDayData(filteredEntries)
+//		//
 //
 // }
 func createDefaultBarChartModel(db *Database, cf calendarTimeFrame, dump io.Writer) barchart.Model {

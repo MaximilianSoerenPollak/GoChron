@@ -111,7 +111,6 @@ type dailyProjectHours struct {
 	Project string
 }
 
-
 func NewEntry(project string, task string) Entry {
 
 	newEntry := Entry{}

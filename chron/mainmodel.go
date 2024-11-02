@@ -35,6 +35,7 @@ func (m MainModel) Init() tea.Cmd {
 
 func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
+	setTerminalSize()
 	if m.dump != nil {
 		spew.Fdump(m.dump, msg)
 	}
@@ -62,7 +63,7 @@ func (m *MainModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.activeModel.Init()
 	case switchToImportModel:
 		m.activeModel = initImportModel(m.dump)
-		return m, m.activeModel.Init()	
+		return m, m.activeModel.Init()
 	}
 	m.activeModel, cmd = m.activeModel.Update(msg)
 	return m, cmd

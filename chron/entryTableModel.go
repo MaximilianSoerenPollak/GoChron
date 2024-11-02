@@ -13,7 +13,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/evertras/bubble-table/table"
-	"golang.org/x/term"
 )
 
 const (
@@ -25,11 +24,6 @@ const (
 	columnKeyTask    = "task"
 	columnKeyHours   = "hours"
 	columnKeyNotes   = "notes"
-)
-
-var (
-	termWidth  int
-	termHeight int
 )
 
 func (lm listModel) FullHelp() [][]key.Binding {
@@ -67,31 +61,19 @@ func (m listModel) Init() tea.Cmd {
 	return nil
 }
 
-func setTerminalSize() {
-	tW, tH, err := term.GetSize(int(os.Stdout.Fd()))
-	if err != nil {
-		fmt.Printf("%s could not get terminal size. Error: %s\n", CharError, err.Error())
-		os.Exit(1)
-	}
-	termWidth = tW
-	termHeight = tH
-}
-
 func initEntryListModel(dump io.Writer) listModel {
+	setTerminalSize()
 	database, err := InitDB()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)
 	}
-	entries, err := database.GetAllEntriesAsString()
+	entries, err := database.GetAllEntriesAsStringWithFormatedTime()
 	if err != nil {
 		fmt.Printf("%s %+v\n", CharError, err)
 		os.Exit(1)
 	}
-	setTerminalSize()
 	compactTable := createCompactTable(entries)
-	compactTable.WithMaxTotalWidth(termWidth)
-	compactTable.WithMinimumHeight(termHeight/3)
 	return listModel{
 		table:       compactTable,
 		db:          database,
@@ -153,10 +135,6 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "i":
 			return m, func() tea.Msg { return switchToImportModel{} }
 		}
-
-		// case tea.WindowSizeMsg:
-		// 	m.table.SetHeight(msg.Height)
-		// 	m.table.SetWidth(msg.Width)
 	}
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
@@ -203,15 +181,17 @@ func createExpandedTable(entries []EntryDB) table.Model {
 		rows = append(rows, r)
 	}
 	keys := table.DefaultKeyMap()
+	pageSize := calculatePages(entries)
 	t := table.New(columns).
 		WithRows(rows).
 		Filtered(true).
-		SortByDesc(columnKeyID).
 		WithBaseStyle(baseStyle).
 		WithTargetWidth(termWidth).
 		Focused(true).
-		WithKeyMap(keys)
-
+		WithKeyMap(keys).
+		WithPageSize(pageSize)
+	t.WithMaxTotalWidth(termWidth)
+	t.WithMinimumHeight(termHeight / 3)
 	return t
 }
 
@@ -239,6 +219,7 @@ func createCompactTable(entries []EntryDB) table.Model {
 			table.RowData{
 				columnKeyID:      v.ID,
 				columnKeyDate:    v.Date,
+				columnKeyStart:   v.Begin,
 				columnKeyProject: v.Project,
 				columnKeyTask:    v.Task,
 				columnKeyHours:   fmtHrs,
@@ -247,14 +228,17 @@ func createCompactTable(entries []EntryDB) table.Model {
 		rows = append(rows, r)
 	}
 	keys := table.DefaultKeyMap()
+	pageSize := calculatePages(entries)
 	t := table.New(columns).
 		Filtered(true).
 		WithRows(rows).
 		Focused(true).
 		WithBaseStyle(baseStyle).
 		WithTargetWidth(termWidth).
-		SortByDesc(columnKeyID).
-		WithKeyMap(keys)
+		WithKeyMap(keys).
+		WithMaxTotalWidth(termWidth - 2).
+		WithPageSize(pageSize)
+
 	return t
 }
 
@@ -271,4 +255,18 @@ func (m listModel) getRowAsEntryDB() EntryDB {
 		os.Exit(1)
 	}
 	return *entry
+}
+
+func calculatePages(entries []EntryDB) int {
+	// TODO: Get it from model do not hardcode it
+	styleHeight, _ := calculateTotalStyleSize(baseStyle)
+	// Need to calculate max rows we can display.
+	// -4 height for filter & help display
+	// -2 as buffer
+	fotterAndHelpDisplay := 5
+	extraBuffer := 3
+	totalPadding := styleHeight + fotterAndHelpDisplay + extraBuffer
+	maxRows := termHeight - totalPadding
+	return maxRows
+
 }

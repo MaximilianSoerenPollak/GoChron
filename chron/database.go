@@ -209,6 +209,52 @@ func (db *Database) GetAllEntriesAsString() ([]EntryDB, error) {
 	return entries, nil
 }
 
+// Gets all entries as 'EntryDB' with times formated AND sorted by 'start ASC'
+func (db *Database) GetAllEntriesAsStringWithFormatedTime() ([]EntryDB, error) {
+	query := `SELECT * FROM entries ORDER BY start ASC;`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		fmt.Printf("Got an error reading all entries. Error: %s\n", err.Error())
+		return nil, err
+	}
+	var entries []EntryDB
+	for rows.Next() {
+		var entryDB EntryDB
+		err := rows.Scan(
+			&entryDB.ID,
+			&entryDB.Date,
+			&entryDB.Begin,
+			&entryDB.Finish,
+			&entryDB.Hours,
+			&entryDB.Project,
+			&entryDB.Task,
+			&entryDB.Notes,
+			&entryDB.Running)
+		if err != nil {
+			fmt.Printf(
+				"%s got an error scanning row from db, Error: %s",
+				CharError,
+				err.Error(),
+			)
+			return nil, err
+		}
+		err = entryDB.FormatTimes()
+		if err != nil {
+			fmt.Printf(
+				"%s got an error formatting times in entryDB struct. Struct: %+v, Error: %s",
+				CharError,
+				entryDB,
+				err.Error(),
+			)
+			return nil, err
+		}
+		entries = append(entries, entryDB)
+	}
+	return entries, nil
+}
+
 func (db *Database) GetAllEntries() ([]Entry, error) {
 	query := `SELECT * FROM entries;`
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

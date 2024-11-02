@@ -90,7 +90,9 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		spew.Fdump(m.dump, fmt.Sprintf("EntryModel: %s", msg))
 		spew.Fdump(m.dump, m.table.GetIsFilterInputFocused())
 	}
+	// ==========================
 	// Keybinds that work in any table state
+	// ==========================
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -125,7 +127,10 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.table.GetIsFilterInputFocused() {
 		return m.UpdateInFilterState(msg)
 	}
+	// ==========================
+	// NON FILTERING KEYBINDS
 	// Keybinds that work only if we are NOT focused on the filter field
+	// ==========================
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -163,31 +168,7 @@ func (m listModel) UpdateInFilterState(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		case "esc":
-			if m.table.GetIsFilterInputFocused() {
-				m.table.Focused(true)
-			} else if m.table.GetFocused() {
-				m.table.Focused(false)
-			} else {
-				m.table.Focused(true)
-			}
-		case "ctrl+v":
-			// Switch from showing 'start / finish' to not showing it.
-			if m.compactView {
-				expTable := createExpandedTable(m.entries)
-				m.table = expTable
-				m.compactView = false
-			} else {
-				compTable := createCompactTable(m.entries)
-				m.table = compTable
-				m.compactView = true
-			}
-		case "enter":
-			return m, tea.Batch(
-				tea.Printf("Let's go to %v!", m.table.HighlightedRow().Data),
-			)
+		// Can add any keybinds we want here
 		}
 	}
 	if !m.table.GetIsFilterInputFocused() {

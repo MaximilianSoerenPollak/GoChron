@@ -88,7 +88,9 @@ func initEntryListModel(dump io.Writer) listModel {
 func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.dump != nil {
 		spew.Fdump(m.dump, fmt.Sprintf("EntryModel: %s", msg))
+		spew.Fdump(m.dump, m.table.GetIsFilterInputFocused())
 	}
+	// Keybinds that work in any table state
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
@@ -97,6 +99,76 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "esc":
 			if m.table.GetFocused() {
+				m.table.Focused(false)
+			} else {
+				m.table.Focused(true)
+			}
+		case "/":
+			m.table.StartFilterTyping()
+		case "ctrl+v":
+			// Switch from showing 'start / finish' to not showing it.
+			if m.compactView {
+				expTable := createExpandedTable(m.entries)
+				m.table = expTable
+				m.compactView = false
+			} else {
+				compTable := createCompactTable(m.entries)
+				m.table = compTable
+				m.compactView = true
+			}
+		case "enter":
+			return m, tea.Batch(
+				tea.Printf("Let's go to %v!", m.table.HighlightedRow().Data),
+			)
+		}
+	}
+	if m.table.GetIsFilterInputFocused() {
+		return m.UpdateInFilterState(msg)
+	}
+	// Keybinds that work only if we are NOT focused on the filter field
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "a":
+			_, err := database.GetUniqueProjects()
+			oldProject = true
+			if errors.Is(err, sql.ErrNoRows) {
+				tea.Println("There are currently no projects. Please create one")
+				oldProject = false
+			}
+			return m, func() tea.Msg { return switchToAddEntryModel{} }
+		case "ctrl+a":
+			oldProject = false
+			return m, func() tea.Msg { return switchToAddEntryModel{} }
+		case "e":
+			entrySelected := m.getRowAsEntryDB()
+			return m, func() tea.Msg { return switchToEditModel{entry: entrySelected} }
+		case "t":
+			return m, func() tea.Msg { return switchToCalendarModel{} }
+		case "i":
+			return m, func() tea.Msg { return switchToImportModel{} }
+		}
+	}
+	m.table, cmd = m.table.Update(msg)
+	return m, cmd
+}
+
+// This will give different inputs / commands when in filter state basically
+// Any keybind that should still WORK while in filter mode, needs to be here
+func (m listModel) UpdateInFilterState(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if m.dump != nil {
+		spew.Fdump(m.dump, fmt.Sprintf("EntryModel: %s", msg))
+	}
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "esc":
+			if m.table.GetIsFilterInputFocused() {
+				m.table.Focused(true)
+			} else if m.table.GetFocused() {
 				m.table.Focused(false)
 			} else {
 				m.table.Focused(true)
@@ -116,25 +188,10 @@ func (m listModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Batch(
 				tea.Printf("Let's go to %v!", m.table.HighlightedRow().Data),
 			)
-		case "a":
-			oldProject = true
-			_, err := database.GetUniqueProjects()
-			if errors.Is(err, sql.ErrNoRows) {
-				tea.Println("There are currently no projects. Please create one")
-				oldProject = false
-			}
-			return m, func() tea.Msg { return switchToAddEntryModel{} }
-		case "ctrl+a":
-			oldProject = false
-			return m, func() tea.Msg { return switchToAddEntryModel{} }
-		case "e":
-			entrySelected := m.getRowAsEntryDB()
-			return m, func() tea.Msg { return switchToEditModel{entry: entrySelected} }
-		case "t":
-			return m, func() tea.Msg { return switchToCalendarModel{} }
-		case "i":
-			return m, func() tea.Msg { return switchToImportModel{} }
 		}
+	}
+	if !m.table.GetIsFilterInputFocused() {
+		return m.Update(msg)
 	}
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
@@ -181,7 +238,6 @@ func createExpandedTable(entries []EntryDB) table.Model {
 		rows = append(rows, r)
 	}
 	keys := table.DefaultKeyMap()
-	pageSize := calculatePages(entries)
 	t := table.New(columns).
 		WithRows(rows).
 		Filtered(true).
@@ -189,9 +245,9 @@ func createExpandedTable(entries []EntryDB) table.Model {
 		WithTargetWidth(termWidth).
 		Focused(true).
 		WithKeyMap(keys).
-		WithPageSize(pageSize)
-	t.WithMaxTotalWidth(termWidth)
-	t.WithMinimumHeight(termHeight / 3)
+		WithMaxTotalWidth(termWidth).
+		WithPageSize(calculateMaxRows()).
+		WithMinimumHeight(termHeight / 4)
 	return t
 }
 
@@ -228,7 +284,6 @@ func createCompactTable(entries []EntryDB) table.Model {
 		rows = append(rows, r)
 	}
 	keys := table.DefaultKeyMap()
-	pageSize := calculatePages(entries)
 	t := table.New(columns).
 		Filtered(true).
 		WithRows(rows).
@@ -236,8 +291,9 @@ func createCompactTable(entries []EntryDB) table.Model {
 		WithBaseStyle(baseStyle).
 		WithTargetWidth(termWidth).
 		WithKeyMap(keys).
-		WithMaxTotalWidth(termWidth - 2).
-		WithPageSize(pageSize)
+		WithTargetWidth(termWidth).
+		WithMinimumHeight(termHeight / 4).
+		WithPageSize(calculateMaxRows())
 
 	return t
 }
@@ -257,16 +313,13 @@ func (m listModel) getRowAsEntryDB() EntryDB {
 	return *entry
 }
 
-func calculatePages(entries []EntryDB) int {
+func calculateMaxRows() int {
 	// TODO: Get it from model do not hardcode it
 	styleHeight, _ := calculateTotalStyleSize(baseStyle)
 	// Need to calculate max rows we can display.
 	// -4 height for filter & help display
 	// -2 as buffer
-	fotterAndHelpDisplay := 5
-	extraBuffer := 3
-	totalPadding := styleHeight + fotterAndHelpDisplay + extraBuffer
+	totalPadding := styleHeight + fotterAndHelpDisplayBuffer + extraBuffer
 	maxRows := termHeight - totalPadding
 	return maxRows
-
 }

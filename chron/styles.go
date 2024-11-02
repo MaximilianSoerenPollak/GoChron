@@ -9,10 +9,12 @@ import (
 )
 
 var (
-	totalStyleHeight = 4
-	totalStyleWidth  = 4
-	termWidth        int
-	termHeight       int
+	totalStyleHeight           = 4
+	totalStyleWidth            = 4
+	termWidth                  int
+	termHeight                 int
+	fotterAndHelpDisplayBuffer = 5
+	extraBuffer                = 3
 )
 
 var paddingStyle = lipgloss.NewStyle().
@@ -31,7 +33,7 @@ var barchartDefaultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
 //
 // Background(lipgloss.Color("#3d405b")).
 var baseStyle = lipgloss.NewStyle().
-	Align(lipgloss.Center)
+	Align(lipgloss.Center).PaddingRight(2)
 
 var tableHeaderStyle = lipgloss.NewStyle().
 	BorderForeground(lipgloss.Color("240")).
@@ -73,18 +75,15 @@ func setTerminalSize() {
 	termHeight = tH
 }
 
-
 // totalHeight, totalWidth
 func calculateTotalStyleSize(styles ...lipgloss.Style) (int, int) {
 	totalHeight := 0
 	totalWidth := 0
 	for _, style := range styles {
-		a,b,c,d := getStyleBorderSize(style)
-		e,f,g,h := getStylePadding(style)
+		a, b, c, d := getStyleBorderSize(style)
+		e, f, g, h := getStylePadding(style)
 		totalHeight += a + d + e + h
-		totalWidth +=  b + c + f + g
+		totalWidth += b + c + f + g
 	}
 	return totalHeight, totalWidth
 }
-
-

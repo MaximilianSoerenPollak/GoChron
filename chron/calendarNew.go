@@ -101,7 +101,8 @@ func initCalendarModel(dump io.Writer) calendarModel {
 		dump:    dump,
 		cf:      createDefaultCalendarTimeFrame(),
 	}
-	cm.chart = createDefaultBarChartModel(database, createDefaultCalendarTimeFrame(), cm.dump)
+	cm.chart = createDefaultBarChartModel(database, createDefaultCalendarTimeFrame())
+	// cm.chart.Canvas.SetString()
 	cm.chart.Draw()
 	return cm
 }
@@ -120,13 +121,12 @@ func (m calendarModel) View() string {
 	return lipgloss.JoinVertical(lipgloss.Center, dateStr, m.chart.View())
 }
 
-func createDefaultBarChartModel(db *Database, cf calendarTimeFrame, dump io.Writer) barchart.Model {
+func createDefaultBarChartModel(db *Database, cf calendarTimeFrame) barchart.Model {
 	dailyHrs, err := db.GetHoursTrackedPerDay(cf)
 	if err != nil {
 		fmt.Printf("%s could not get hours tracked per day. Error: %s\n", CharError, err.Error())
 		os.Exit(1)
 	}
-	spew.Fdump(dump, dailyHrs)
 	bc := barchart.New(termWidth/2, termHeight/2)
 	var data []barchart.BarData
 	for i, v := range dailyHrs {
@@ -168,7 +168,6 @@ func calculatePerDayData(entries []Entry) ([]barchart.BarData, []barchart.BarDat
 	// Question: How do we filter???
 	for _, v := range entries {
 		// Hours on that day.
-		// date = map
 		hoursPerDay[v.Date] = make(map[string]decimal.Decimal)
 		hoursPerDay[v.Date][v.Project] = hoursPerDay[v.Date][v.Project].Add(v.Hours)
 		hoursPerDay[v.Date]["totalHours"] = hoursPerDay[v.Date]["totalHours"].Add(v.Hours)
@@ -241,6 +240,12 @@ func getCurrentDateRangeString(cf calendarTimeFrame) string {
 	dateRangeStr := fmt.Sprintf("Date range\n\n %s --- %s", sinceFormated, untilFormated)
 	return dateRangeStr
 }
+
+
+// func (m calendarModel) generateHourAxis() string {
+// 	maxVal := m.chart.MaxValue()
+// 	return  ""
+// }
 
 // func (m listModel) setSize(dateRangeStr string) {
 // 	widthDR, heightDR := lipgloss.Size(dateRangeStr)

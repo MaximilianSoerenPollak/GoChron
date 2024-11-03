@@ -7,8 +7,10 @@ import (
 	"time"
 
 	"github.com/NimbleMarkets/ntcharts/barchart"
+	"github.com/araddon/dateparse"
 	"github.com/charmbracelet/bubbles/help"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/shopspring/decimal"
 )
@@ -114,29 +116,10 @@ func (m calendarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m calendarModel) View() string {
-	return m.chart.View()
-	// return m.chart.View()
-	// b, _ := json.MarshalIndent(m.debug, "", "  ")
-	// return fmt.Sprintln(string(b))
+	dateStr := dateRangeBottomBorderStyle.Render(getCurrentDateRangeString(m.cf))
+	return lipgloss.JoinVertical(lipgloss.Center, dateStr, m.chart.View())
 }
 
-// Function errors
-//
-//	func (m *calendarModel) createDefaultCalendarChart() {
-//		// Getting all entries.
-//		entries, err := m.db.GetAllEntries()
-//		if err != nil {
-//			fmt.Printf("%s %+v\n", CharError, err)
-//			os.Exit(1)
-//		}
-//		// Filtering entries
-//		defaultFilter := createDefaultCalendarFilter()
-//		// filteredEntries := filterEntries(defaultFilter, entries)
-//		// TODO: We need to filter the entries before this
-//		// barDataDayTotal, barDataDayProject := calculatePerDayData(filteredEntries)
-//		//
-//
-// }
 func createDefaultBarChartModel(db *Database, cf calendarTimeFrame, dump io.Writer) barchart.Model {
 	dailyHrs, err := db.GetHoursTrackedPerDay(cf)
 	if err != nil {
@@ -148,7 +131,7 @@ func createDefaultBarChartModel(db *Database, cf calendarTimeFrame, dump io.Writ
 	var data []barchart.BarData
 	for i, v := range dailyHrs {
 		bd := barchart.BarData{
-			Label: v.Date,
+			Label: v.Date[:len(v.Date)-5],
 			Values: []barchart.BarValue{
 				{
 					Name:  fmt.Sprintf("Item%d", i),
@@ -162,7 +145,11 @@ func createDefaultBarChartModel(db *Database, cf calendarTimeFrame, dump io.Writ
 	}
 	bc.PushAll(data)
 	bc.AutoMaxValue = true
-	bc.AutoBarWidth = true
+	bc.AutoBarWidth = true 
+
+	// Hardcoded for now I guess
+	bc.SetBarGap(1)
+	// bc.Resize(termHeight - extraBuffer - 5)
 	return bc
 
 }
@@ -225,3 +212,37 @@ func calculatePerDayData(entries []Entry) ([]barchart.BarData, []barchart.BarDat
 func calculatePerWeekData(hoursPerDay map[string]map[string]decimal.Decimal) ([]barchart.BarData, []barchart.BarData) {
 	return nil, nil
 }
+
+//          ╭─────────────────────────────────────────────────────────╮
+//          │                  STYLING RELATED STUFF                  │
+//          ╰─────────────────────────────────────────────────────────╯
+
+func getCurrentDateRangeString(cf calendarTimeFrame) string {
+	parsedDateSince, err := dateparse.ParseAny(cf.since.String())
+	if err != nil {
+		fmt.Printf("%s error parsing calendar time range 'since'. CalendarTimeFrame: %+v\n, Error: %s",
+			CharError,
+			cf,
+			err.Error(),
+		)
+		return "Gotten Error parsing time. Check logs"
+	}
+	sinceFormated := parsedDateSince.Format("01-02-2006")
+	parsedDateUntil, err := dateparse.ParseAny(cf.until.String())
+	if err != nil {
+		fmt.Printf("%s error parsing calendar time range 'until'. CalendarTimeFrame: %+v\n, Error: %s",
+			CharError,
+			cf,
+			err.Error(),
+		)
+		return "Gotten Error parsing time. Check logs"
+	}
+	untilFormated := parsedDateUntil.Format("01-02-2006")
+	dateRangeStr := fmt.Sprintf("Date range\n\n %s --- %s", sinceFormated, untilFormated)
+	return dateRangeStr
+}
+
+// func (m listModel) setSize(dateRangeStr string) {
+// 	widthDR, heightDR := lipgloss.Size(dateRangeStr)
+// 	m.chart.
+// }

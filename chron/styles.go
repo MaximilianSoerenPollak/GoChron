@@ -25,7 +25,7 @@ var paddingStyle = lipgloss.NewStyle().
 
 var centerAlignStyle = lipgloss.NewStyle().Align(lipgloss.Center)
 
-var barchartDefaultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3"))
+var barchartDefaultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Align(lipgloss.Center)
 
 // BorderBackground(lipgloss.Color("#81b29a")).
 //
@@ -48,6 +48,12 @@ var selectedEntryStyle = lipgloss.NewStyle().
 	AlignVertical(lipgloss.Center).
 	AlignHorizontal(lipgloss.Center).
 	Bold(false)
+
+var dateRangeBottomBorderStyle = lipgloss.NewStyle().
+	Border(lipgloss.NormalBorder(), true, true).Width(termWidth).Padding(1).AlignHorizontal(lipgloss.Center)
+
+// var calendarBaseStyle = lipgloss.NewStyle(). 
+// 	Align(lipgloss.Center)
 
 // top, left, right ,bottom
 func getStyleBorderSize(style lipgloss.Style) (int, int, int, int) {

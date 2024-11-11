@@ -32,8 +32,7 @@ var barchartDefaultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).A
 //	BorderForeground(lipgloss.Color("#81b29a")).
 //
 // Background(lipgloss.Color("#3d405b")).
-var baseStyle = lipgloss.NewStyle().
-	Align(lipgloss.Center).PaddingRight(2)
+var baseStyle = lipgloss.NewStyle()
 
 var tableHeaderStyle = lipgloss.NewStyle().
 	BorderForeground(lipgloss.Color("240")).
@@ -50,9 +49,9 @@ var selectedEntryStyle = lipgloss.NewStyle().
 	Bold(false)
 
 var dateRangeBottomBorderStyle = lipgloss.NewStyle().
-	Border(lipgloss.NormalBorder(), true, true).Width(termWidth).Padding(1).AlignHorizontal(lipgloss.Center)
+	Border(lipgloss.NormalBorder(), true, true).Width(termWidth).AlignHorizontal(lipgloss.Center).Margin(1).Padding(1)
 
-// var calendarBaseStyle = lipgloss.NewStyle(). 
+// var calendarBaseStyle = lipgloss.NewStyle().
 // 	Align(lipgloss.Center)
 
 // top, left, right ,bottom

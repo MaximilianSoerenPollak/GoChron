@@ -473,10 +473,10 @@ func createDefaultTables(db *sql.DB) error {
 // Returns 'date | SUM(hours)'
 func (db *Database) GetHoursTrackedPerDay(cf calendarTimeFrame) ([]dailyHours, error) {
 	query := fmt.Sprintf(`SELECT date, SUM(hours) FROM entries 
-						WHERE start > '%s' 
-						AND start < '%s'
+						WHERE start >= '%s' 
+						AND start <= '%s'
 						GROUP BY date
-						ORDER BY START ASC;`, cf.since.String(), cf.until.String())
+						ORDER BY START ASC;`, cf.since, cf.until)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	rows, err := db.DB.QueryContext(ctx, query)
@@ -493,6 +493,8 @@ func (db *Database) GetHoursTrackedPerDay(cf calendarTimeFrame) ([]dailyHours, e
 			&hoursStr,
 		)
 		if err != nil {
+			fmt.Println("====================+++++")
+			fmt.Println(err.Error())
 			return nil, err
 		}
 		hoursDec, err := decimal.NewFromString(hoursStr)
@@ -511,7 +513,7 @@ func (db *Database) GetHoursTrackedPerDayAndProject(cf calendarTimeFrame) ([]dai
 						WHERE start < '%s' 
 						AND start > '%s'
 						GROUP BY date, project
-						ORDER BY START ASC;`, cf.since.String(), cf.until.String())
+						ORDER BY START ASC;`, cf.since, cf.until)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	rows, err := db.DB.QueryContext(ctx, query)
@@ -549,7 +551,7 @@ func (db *Database) GetLongestEntryPerDay(cf calendarTimeFrame) ([]Entry, error)
 						WHERE start < '%s' 
 						AND start > '%s'
 						GROUP BY date 
-						ORDER BY START ASC;`, cf.since.String(), cf.until.String())
+						ORDER BY START ASC;`, cf.since, cf.until)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	rows, err := db.DB.QueryContext(ctx, query)

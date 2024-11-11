@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/NimbleMarkets/ntcharts/barchart"
-	"github.com/araddon/dateparse"
 	"github.com/charmbracelet/bubbles/help"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -56,6 +55,7 @@ import (
 
 type calendarModel struct {
 	chart   barchart.Model
+	barData []barchart.BarData
 	keys    help.KeyMap
 	debug   map[string]map[string]decimal.Decimal
 	entries []EntryDB
@@ -66,15 +66,16 @@ type calendarModel struct {
 }
 
 type calendarTimeFrame struct {
-	since time.Time // Filter from
-	until time.Time // Filter until
+	since string // Filter from
+	until string // Filter until
 }
 
 func createDefaultCalendarTimeFrame() calendarTimeFrame {
-	twoWeeksAgo := time.Now().UTC().Add(-336 * time.Hour)
+	since := time.Now().UTC().Add(-336 * time.Hour).Format("2006-01-02")
+	until := time.Now().UTC().Format("2006-01-02")
 	return calendarTimeFrame{
-		since: twoWeeksAgo,
-		until: time.Now().UTC(),
+		since: since,
+		until: until,
 	}
 }
 
@@ -101,7 +102,9 @@ func initCalendarModel(dump io.Writer) calendarModel {
 		dump:    dump,
 		cf:      createDefaultCalendarTimeFrame(),
 	}
-	cm.chart = createDefaultBarChartModel(database, createDefaultCalendarTimeFrame())
+	data := createBarData(database, createDefaultCalendarTimeFrame())
+	cm.chart = createDefaultBarChartModel(data)
+	cm.barData = data
 	// cm.chart.Canvas.SetString()
 	cm.chart.Draw()
 	return cm
@@ -116,19 +119,24 @@ func (m calendarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 }
 
-func (m calendarModel) View() string {
-	dateStr := dateRangeBottomBorderStyle.Render(getCurrentDateRangeString(m.cf))
-	return lipgloss.JoinVertical(lipgloss.Center, dateStr, m.chart.View())
+func (m calendarModel) View() string {	
+	dateStr := m.generateDateRangeStr()
+	mmaStr := m.generateMinMaxAvgStr()
+	mmaChart := lipgloss.JoinHorizontal(lipgloss.Top, m.chart.View(), mmaStr)
+	return lipgloss.JoinVertical(lipgloss.Center, dateStr, mmaChart)
 }
-
-func createDefaultBarChartModel(db *Database, cf calendarTimeFrame) barchart.Model {
+func createBarData(db *Database, cf calendarTimeFrame) []barchart.BarData {
 	dailyHrs, err := db.GetHoursTrackedPerDay(cf)
 	if err != nil {
 		fmt.Printf("%s could not get hours tracked per day. Error: %s\n", CharError, err.Error())
 		os.Exit(1)
 	}
-	bc := barchart.New(termWidth/2, termHeight/2)
 	var data []barchart.BarData
+	if dailyHrs == nil {
+		// TODO: Need to make this into a new information box not like this.
+		fmt.Printf("error, no data for selected date range.")
+		os.Exit(1)
+	}
 	for i, v := range dailyHrs {
 		bd := barchart.BarData{
 			Label: v.Date[:len(v.Date)-5],
@@ -141,15 +149,18 @@ func createDefaultBarChartModel(db *Database, cf calendarTimeFrame) barchart.Mod
 			},
 		}
 		data = append(data, bd)
-
 	}
+	return data
+
+}
+func createDefaultBarChartModel(data []barchart.BarData) barchart.Model {
+	bc := barchart.New(termWidth/2, termHeight/2)
 	bc.PushAll(data)
 	bc.AutoMaxValue = true
-	bc.AutoBarWidth = true 
+	bc.AutoBarWidth = true
 
 	// Hardcoded for now I guess
 	bc.SetBarGap(1)
-	// bc.Resize(termHeight - extraBuffer - 5)
 	return bc
 
 }
@@ -216,31 +227,34 @@ func calculatePerWeekData(hoursPerDay map[string]map[string]decimal.Decimal) ([]
 //          │                  STYLING RELATED STUFF                  │
 //          ╰─────────────────────────────────────────────────────────╯
 
-func getCurrentDateRangeString(cf calendarTimeFrame) string {
-	parsedDateSince, err := dateparse.ParseAny(cf.since.String())
-	if err != nil {
-		fmt.Printf("%s error parsing calendar time range 'since'. CalendarTimeFrame: %+v\n, Error: %s",
-			CharError,
-			cf,
-			err.Error(),
-		)
-		return "Gotten Error parsing time. Check logs"
+func (m calendarModel) generateMinMaxAvgStr() string {
+	data := m.barData
+	maxValue := m.chart.MaxValue()
+	var minValue  float64
+	var total float64 
+	for i, dp := range data {
+		for _, x := range dp.Values {
+			total += x.Value
+			if i == 0 {
+				minValue = x.Value 
+			}
+			if x.Value < minValue {
+				minValue = x.Value
+			}
+		}	
 	}
-	sinceFormated := parsedDateSince.Format("01-02-2006")
-	parsedDateUntil, err := dateparse.ParseAny(cf.until.String())
-	if err != nil {
-		fmt.Printf("%s error parsing calendar time range 'until'. CalendarTimeFrame: %+v\n, Error: %s",
-			CharError,
-			cf,
-			err.Error(),
-		)
-		return "Gotten Error parsing time. Check logs"
-	}
-	untilFormated := parsedDateUntil.Format("01-02-2006")
-	dateRangeStr := fmt.Sprintf("Date range\n\n %s --- %s", sinceFormated, untilFormated)
-	return dateRangeStr
+	avg := total / float64(len(data))
+	mmaStr := fmt.Sprintf("Max: %.2fh\nMin: %.2fh\nAvg: %.2fh",maxValue, minValue, avg)
+	strHeight := lipgloss.Height(mmaStr)
+	vertialStr :=  lipgloss.PlaceVertical(strHeight, 0.5, mmaStr)
+	return dateRangeBottomBorderStyle.Render(vertialStr)
 }
 
+func (m calendarModel) generateDateRangeStr() string {
+	dateRangeStr := m.cf.since + "  -  " + m.cf.until
+	dateStr := lipgloss.JoinVertical(lipgloss.Center, "Queried Dates\n", dateRangeStr)
+	return  dateRangeBottomBorderStyle.Render(dateStr)
+}
 
 // func (m calendarModel) generateHourAxis() string {
 // 	maxVal := m.chart.MaxValue()

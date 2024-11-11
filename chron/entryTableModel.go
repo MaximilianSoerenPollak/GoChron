@@ -270,9 +270,9 @@ func createCompactTable(entries []EntryDB) table.Model {
 		WithRows(rows).
 		Focused(true).
 		WithBaseStyle(baseStyle).
+		WithMaxTotalWidth(termWidth).
 		WithTargetWidth(termWidth).
 		WithKeyMap(keys).
-		WithTargetWidth(termWidth).
 		WithMinimumHeight(termHeight / 4).
 		WithPageSize(calculateMaxRows())
 

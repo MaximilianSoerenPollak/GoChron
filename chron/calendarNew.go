@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/NimbleMarkets/ntcharts/barchart"
 	"github.com/charmbracelet/bubbles/help"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	lgTable "github.com/charmbracelet/lipgloss/table"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/shopspring/decimal"
 )
@@ -53,6 +55,13 @@ import (
 // ===============================================================
 // ===============================================================
 
+const (
+	LastWeek int = iota
+	LastTwoWeeks
+	ThisMonth
+	LastMonth
+)
+
 type calendarModel struct {
 	chart   barchart.Model
 	barData []barchart.BarData
@@ -60,9 +69,9 @@ type calendarModel struct {
 	debug   map[string]map[string]decimal.Decimal
 	entries []EntryDB
 	db      *Database
-	help    help.Model
 	dump    io.Writer
 	cf      calendarTimeFrame
+	ctf     string //current time window
 }
 
 type calendarTimeFrame struct {
@@ -71,12 +80,15 @@ type calendarTimeFrame struct {
 }
 
 func createDefaultCalendarTimeFrame() calendarTimeFrame {
-	since := time.Now().UTC().Add(-336 * time.Hour).Format("2006-01-02")
-	until := time.Now().UTC().Format("2006-01-02")
+	since := time.Now().UTC().Add(-1336 * time.Hour).Format("2006-01-02")
+	until := time.Now().UTC().Format(time.DateOnly)
 	return calendarTimeFrame{
 		since: since,
 		until: until,
 	}
+}
+
+func createCalendarTimeFrame(ctf int){
 }
 
 func (m calendarModel) Init() tea.Cmd {
@@ -98,7 +110,6 @@ func initCalendarModel(dump io.Writer) calendarModel {
 		keys:    createChronDefaultKeyMap(),
 		entries: entries,
 		db:      database,
-		help:    help.New(),
 		dump:    dump,
 		cf:      createDefaultCalendarTimeFrame(),
 	}
@@ -115,16 +126,37 @@ func (m calendarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.dump != nil {
 		spew.Fdump(m.dump, msg)
 	}
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		case "ctrl+v":
+			// Switch from showing 'start / finish' to not showing it.
+			// 	case "enter":
+			// 		return m, tea.Batch(
+			// 			tea.Printf("Let's go to %v!", m.table.HighlightedRow().Data),
+			// 		)
+			// 	}
+		}
+	}
+	// }
 	return m, cmd
 
 }
 
-func (m calendarModel) View() string {	
+func (m calendarModel) View() string {
 	dateStr := m.generateDateRangeStr()
 	mmaStr := m.generateMinMaxAvgStr()
-	mmaChart := lipgloss.JoinHorizontal(lipgloss.Top, m.chart.View(), mmaStr)
+	keyMapStr := generateKeyMapStr(mmaStr, m.chart.Height())
+	sepStr := strings.Repeat("=", lipgloss.Width(keyMapStr))
+	keyMapSepStr := lipgloss.JoinVertical(lipgloss.Center, lipgloss.NewStyle().Margin(1).Render(sepStr), keyMapStr)
+	mmaKmpStr := lipgloss.JoinVertical(lipgloss.Left, mmaStr, keyMapSepStr)
+	mmaKmpStrPad := lipgloss.NewStyle().MarginLeft(2).Render(mmaKmpStr)
+	mmaChart := lipgloss.JoinHorizontal(lipgloss.Top, m.chart.View(), mmaKmpStrPad)
 	return lipgloss.JoinVertical(lipgloss.Center, dateStr, mmaChart)
 }
+
 func createBarData(db *Database, cf calendarTimeFrame) []barchart.BarData {
 	dailyHrs, err := db.GetHoursTrackedPerDay(cf)
 	if err != nil {
@@ -151,76 +183,17 @@ func createBarData(db *Database, cf calendarTimeFrame) []barchart.BarData {
 		data = append(data, bd)
 	}
 	return data
-
 }
+
 func createDefaultBarChartModel(data []barchart.BarData) barchart.Model {
+	// TODO: Get a better way to determin the width of this thing
 	bc := barchart.New(termWidth/2, termHeight/2)
 	bc.PushAll(data)
 	bc.AutoMaxValue = true
 	bc.AutoBarWidth = true
 
-	// Hardcoded for now I guess
-	bc.SetBarGap(1)
 	return bc
 
-}
-
-// Calcualte all data available as 'total' and 'perProject' per day.
-func calculatePerDayData(entries []Entry) ([]barchart.BarData, []barchart.BarData) {
-
-	// Calculating all hours and hours per day
-	var totalHours decimal.Decimal
-
-	// TODO: Is there a better way than this?
-	// map[string]map[string]decimal.Decimal
-	// { "20.01.2024": { "Project A": 20, "Project B": 10 },}
-	var hoursPerDay = make(map[string]map[string]decimal.Decimal)
-
-	// Question: How do we filter???
-	for _, v := range entries {
-		// Hours on that day.
-		hoursPerDay[v.Date] = make(map[string]decimal.Decimal)
-		hoursPerDay[v.Date][v.Project] = hoursPerDay[v.Date][v.Project].Add(v.Hours)
-		hoursPerDay[v.Date]["totalHours"] = hoursPerDay[v.Date]["totalHours"].Add(v.Hours)
-		totalHours.Add(v.Hours)
-	}
-
-	var barDataDayTotal []barchart.BarData
-	var barDataDayProject []barchart.BarData
-	for date, hoursMap := range hoursPerDay {
-		bcTotal := barchart.BarData{
-			Label: date,
-			Values: []barchart.BarValue{
-				{
-					Name:  "totalHours",
-					Value: hoursMap["totalHours"].InexactFloat64(),
-					Style: barchartDefaultStyle,
-				},
-			},
-		}
-		barDataDayTotal = append(barDataDayTotal, bcTotal)
-
-		// Needed for when we want to show the Projects individually
-		bcProject := barchart.BarData{
-			Label: date,
-		}
-		var bcProjectValues []barchart.BarValue
-		for k, v := range hoursMap {
-			bv := barchart.BarValue{
-				Name:  k,
-				Value: v.InexactFloat64(),
-				Style: barchartDefaultStyle,
-			}
-			bcProjectValues = append(bcProjectValues, bv)
-		}
-		bcProject.Values = bcProjectValues
-		barDataDayProject = append(barDataDayProject, bcProject)
-	}
-	return barDataDayTotal, barDataDayProject
-}
-
-func calculatePerWeekData(hoursPerDay map[string]map[string]decimal.Decimal) ([]barchart.BarData, []barchart.BarData) {
-	return nil, nil
 }
 
 //          ╭─────────────────────────────────────────────────────────╮
@@ -230,38 +203,56 @@ func calculatePerWeekData(hoursPerDay map[string]map[string]decimal.Decimal) ([]
 func (m calendarModel) generateMinMaxAvgStr() string {
 	data := m.barData
 	maxValue := m.chart.MaxValue()
-	var minValue  float64
-	var total float64 
+	var minValue float64
+	var total float64
 	for i, dp := range data {
 		for _, x := range dp.Values {
 			total += x.Value
 			if i == 0 {
-				minValue = x.Value 
+				minValue = x.Value
 			}
 			if x.Value < minValue {
 				minValue = x.Value
 			}
-		}	
+		}
 	}
 	avg := total / float64(len(data))
-	mmaStr := fmt.Sprintf("Max: %.2fh\nMin: %.2fh\nAvg: %.2fh",maxValue, minValue, avg)
+	mmaStr := fmt.Sprintf("Max: %.2fh\nMin: %.2fh\nAvg: %.2fh", maxValue, minValue, avg)
 	strHeight := lipgloss.Height(mmaStr)
-	vertialStr :=  lipgloss.PlaceVertical(strHeight, 0.5, mmaStr)
-	return dateRangeBottomBorderStyle.Render(vertialStr)
+	verticalStr := lipgloss.PlaceVertical(strHeight, 0.5, mmaStr)
+	return dateRangeBottomBorderStyle.Render(verticalStr)
 }
 
 func (m calendarModel) generateDateRangeStr() string {
 	dateRangeStr := m.cf.since + "  -  " + m.cf.until
 	dateStr := lipgloss.JoinVertical(lipgloss.Center, "Queried Dates\n", dateRangeStr)
-	return  dateRangeBottomBorderStyle.Render(dateStr)
+	return dateRangeBottomBorderStyle.Render(dateStr)
 }
 
-// func (m calendarModel) generateHourAxis() string {
-// 	maxVal := m.chart.MaxValue()
-// 	return  ""
-// }
+// Unsure where I should put these keymaps, for now they are hardcoded
+func generateKeyMapStr(minMaxStr string, tableHeight int) string {
+	rows := [][]string{
+		{" ctrl+1 ", " Last Week "},
+		{" ctrl+2 ", " Last 2 Weeks "},
+		{" ctrl+m ", " Current Month "},
+		{" ctrl+l ", " Last Month "},
+	}
+	maxHeight := lipgloss.Height(minMaxStr) + tableHeight
+	lg := lgTable.New().
+		Headers(" KEYMAP ", " QUERIED DATES ").
+		Rows(rows...).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			if row == 0 {
+				return keyMapShortCutTableHeaderStyle
+			}
+			return lipgloss.NewStyle()
+		},
+		).
+		BorderRow(true).
+		BorderColumn(true).
+		Height(maxHeight)
+	// keyMapStr := "Quick select queried dates\n\n"
 
-// func (m listModel) setSize(dateRangeStr string) {
-// 	widthDR, heightDR := lipgloss.Size(dateRangeStr)
-// 	m.chart.
-// }
+	return lg.Render()
+	// return keyMapStr + fmt.Sprint(lg)
+}

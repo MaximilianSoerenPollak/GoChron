@@ -8,6 +8,7 @@ import (
 	"golang.org/x/term"
 )
 
+// TODO: Find better colors, or any at all
 var (
 	totalStyleHeight           = 4
 	totalStyleWidth            = 4
@@ -22,6 +23,23 @@ var paddingStyle = lipgloss.NewStyle().
 	PaddingRight(2).
 	PaddingBottom(2).
 	PaddingLeft(2)
+
+var chartTopBorder = lipgloss.Border{
+		Top:          "=",
+		Bottom:       "─",
+		Left:         "│",
+		Right:        "⩨",
+		TopLeft:      "┌",
+		TopRight:     "┐",
+		BottomLeft:   "└",
+		BottomRight:  "┘",
+		MiddleLeft:   "├",
+		MiddleRight:  "┤",
+		Middle:       "┼",
+		MiddleTop:    "┬",
+		MiddleBottom: "┴",
+	}
+
 
 var centerAlignStyle = lipgloss.NewStyle().Align(lipgloss.Center)
 
@@ -47,6 +65,8 @@ var selectedEntryStyle = lipgloss.NewStyle().
 	AlignVertical(lipgloss.Center).
 	AlignHorizontal(lipgloss.Center).
 	Bold(false)
+
+var keyMapShortCutTableHeaderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("20")).Background(lipgloss.Color("30"))
 
 var dateRangeBottomBorderStyle = lipgloss.NewStyle().
 	Border(lipgloss.NormalBorder(), true, true).Width(termWidth).AlignHorizontal(lipgloss.Center).Margin(1).Padding(1)

@@ -471,7 +471,7 @@ func createDefaultTables(db *sql.DB) error {
 
 // Will give summed hours per date, irrgeardless of project
 // Returns 'date | SUM(hours)'
-func (db *Database) GetHoursTrackedPerDay(cf calendarTimeFrame) ([]dailyHours, error) {
+func (db *Database) GetHoursTrackedPerDay(cf calendarTimeFrame) ([]GroupedEntries, error) {
 	query := fmt.Sprintf(`SELECT date, SUM(hours) FROM entries 
 						WHERE start >= '%s' 
 						AND start <= '%s'
@@ -484,16 +484,15 @@ func (db *Database) GetHoursTrackedPerDay(cf calendarTimeFrame) ([]dailyHours, e
 		fmt.Printf("ran into an error when reading the database. Error: %s", err.Error())
 		return nil, err
 	}
-	var dailyEntries []dailyHours
+	var dailyEntries []GroupedEntries
 	for rows.Next() {
-		var dailyEntry dailyHours
+		var dailyEntry GroupedEntries
 		var hoursStr string
 		err := rows.Scan(
 			&dailyEntry.Date,
 			&hoursStr,
 		)
 		if err != nil {
-			fmt.Println("====================+++++")
 			fmt.Println(err.Error())
 			return nil, err
 		}
@@ -508,7 +507,7 @@ func (db *Database) GetHoursTrackedPerDay(cf calendarTimeFrame) ([]dailyHours, e
 	return dailyEntries, nil
 }
 
-func (db *Database) GetHoursTrackedPerDayAndProject(cf calendarTimeFrame) ([]dailyProjectHours, error) {
+func (db *Database) GetHoursTrackedPerDayAndProject(cf calendarTimeFrame) ([]GroupedProjectHours, error) {
 	query := fmt.Sprintf(`SELECT date, project SUM(hours) FROM entries 
 						WHERE start < '%s' 
 						AND start > '%s'
@@ -521,9 +520,9 @@ func (db *Database) GetHoursTrackedPerDayAndProject(cf calendarTimeFrame) ([]dai
 		rows.Close()
 		return nil, err
 	}
-	var dailyEntries []dailyProjectHours
+	var dailyEntries []GroupedProjectHours
 	for rows.Next() {
-		var dailyProjectEntry dailyProjectHours
+		var dailyProjectEntry GroupedProjectHours
 		var hoursStr string
 		err := rows.Scan(
 			&dailyProjectEntry.Date,
@@ -543,6 +542,79 @@ func (db *Database) GetHoursTrackedPerDayAndProject(cf calendarTimeFrame) ([]dai
 	}
 	return dailyEntries, nil
 }
+
+// This gives you back all horus worked accumulated, grouped per month.
+func (db *Database) GetHoursTrackerPerMonth(cf calendarTimeFrame) ([]GroupedEntries, error) {
+	query := `SELECT strftime('%m', start) as month, SUM(hours) FROM entries `
+	query += fmt.Sprintf(`WHERE start >= '%s' AND start <= '%s' `, cf.since, cf.until)
+	query += `GROUP BY strftime('%m', start) ORDER BY START ASC;`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		fmt.Printf("ran into an error when reading the database. Error: %s", err.Error())
+		return nil, err
+	}
+	var monthlyEntries []GroupedEntries
+	for rows.Next() {
+		var monthlyEntry GroupedEntries
+		var hoursStr string
+		err := rows.Scan(
+			&monthlyEntry.Date,
+			&hoursStr,
+		)
+		if err != nil {
+			fmt.Println(err.Error())
+			return nil, err
+		}
+		hoursDec, err := decimal.NewFromString(hoursStr)
+		if err != nil {
+			fmt.Printf("Could not convert hours from str to decimal. Error: %s", err.Error())
+			return nil, err
+		}
+		monthlyEntry.Hours = hoursDec
+		monthlyEntries = append(monthlyEntries, monthlyEntry)
+	}
+	return monthlyEntries, nil
+}
+
+
+// This gives you back all horus worked accumulated, grouped per month.
+func (db *Database) GetHoursTrackerPerWeek(cf calendarTimeFrame) ([]GroupedEntries, error) {
+	query := `SELECT strftime('%W', start) as date, SUM(hours) FROM entries `
+	query += fmt.Sprintf(`WHERE start >= '%s' AND start <= '%s' `, cf.since, cf.until)
+	query += `GROUP BY strftime('%W', start) ORDER BY START ASC;`
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.DB.QueryContext(ctx, query)
+	if err != nil {
+		fmt.Printf("ran into an error when reading the database. Error: %s", err.Error())
+		return nil, err
+	}
+	var weeklyEntries []GroupedEntries
+	for rows.Next() {
+		var weeklyEntry GroupedEntries
+		var hoursStr string
+		err := rows.Scan(
+			&weeklyEntry.Date,
+			&hoursStr,
+		)
+		if err != nil {
+			fmt.Println(err.Error())
+			return nil, err
+		}
+		hoursDec, err := decimal.NewFromString(hoursStr)
+		if err != nil {
+			fmt.Printf("Could not convert hours from str to decimal. Error: %s", err.Error())
+			return nil, err
+		}
+		weeklyEntry.Hours = hoursDec
+		weeklyEntries = append(weeklyEntries, weeklyEntry)
+	}
+	return weeklyEntries, nil
+}
+
+
 
 // Unsure if 'max' or 'sum' of hours even works as it's a 'string' type in the DB
 // TODO: Test

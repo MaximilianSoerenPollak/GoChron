@@ -100,12 +100,12 @@ type EntriesGroupedByDay struct {
 	Hours    decimal.Decimal
 }
 
-type dailyHours struct {
+type GroupedEntries struct {
 	Date  string
 	Hours decimal.Decimal
 }
 
-type dailyProjectHours struct {
+type GroupedProjectHours struct {
 	Date    string
 	Hours   decimal.Decimal
 	Project string

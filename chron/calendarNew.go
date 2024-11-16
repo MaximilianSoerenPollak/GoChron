@@ -194,39 +194,39 @@ func initCalendarModel(dump io.Writer) calendarModel {
 	cm.ctf = CurrWeek
 	cm.cf = createDefaultCalendarTimeFrame()
 	// cm.cf = createCalendarTimeFrame(CurrWeek)
-	cm.chart = cm.updateBarChart("months")
+	cm.chart, cm.barData = updateBarChart(database, cm.cf, "months")
 	cm.chart.Draw()
 	return cm
 }
 
-func (m calendarModel) updateBarChart(grouping string) barchart.Model {
+func updateBarChart(db *Database, cf calendarTimeFrame, grouping string) (barchart.Model,[]barchart.BarData) {
 	var queriedEntries []GroupedEntries
 	var err error
 	switch grouping {
 	// Quaterly view
 	case "weeks":
-		queriedEntries, err = m.db.GetHoursTrackerPerWeek(m.cf)
+		queriedEntries, err = db.GetHoursTrackerPerWeek(cf)
 		if err != nil {
 			fmt.Printf("Encountered an error while getting entries grouped by week. Error: %s", err.Error())
 			os.Exit(1)
 		}
 	// Yearly view
 	case "months":
-		queriedEntries, err = m.db.GetHoursTrackerPerMonth(m.cf)
+		queriedEntries, err = db.GetHoursTrackerPerMonth(cf)
 		if err != nil {
-			fmt.Printf("Encountered an error while getting entries grouped by month. Error: %s", err.Error())
+			fmt.Printf("Encountered an error while getting entries grouped by nth. Error: %s", err.Error())
 			os.Exit(1)
 		}
-	// Normal / default view
+	// Norl / default view
 	case "days":
-		queriedEntries, err = m.db.GetHoursTrackedPerDay(m.cf)
+		queriedEntries, err = db.GetHoursTrackedPerDay(cf)
 		if err != nil {
 			fmt.Printf("Encountered an error while getting entries grouped by day. Error: %s", err.Error())
 			os.Exit(1)
 		}
 	// Just as a failsave
 	default:
-		queriedEntries, err = m.db.GetHoursTrackedPerDay(m.cf)
+		queriedEntries, err = db.GetHoursTrackedPerDay(cf)
 		if err != nil {
 			fmt.Printf("Encountered an error while getting entries grouped by day. Error: %s", err.Error())
 			os.Exit(1)
@@ -239,7 +239,7 @@ func (m calendarModel) updateBarChart(grouping string) barchart.Model {
 		os.Exit(1)
 	}
 	data := createDayGroupedBarData(queriedEntries, grouping)
-	return createBarChartModel(data)
+	return createBarChartModel(data), data
 
 }
 
@@ -257,27 +257,27 @@ func (m calendarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+1":
 			m.ctf = CurrWeek
 			m.cf = createCalendarTimeFrame(CurrWeek)
-			m.chart = m.updateBarChart("days")
+			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
 		case "ctrl+2":
 			m.ctf = LastWeek
 			m.cf = createCalendarTimeFrame(LastWeek)
-			m.chart = m.updateBarChart("days")
+			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
 		case "ctrl+m":
 			m.ctf = CurrMonth
 			m.cf = createCalendarTimeFrame(CurrMonth)
-			m.chart = m.updateBarChart("days")
+			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
 		case "ctrl+l":
 			m.ctf = LastMonth
 			m.cf = createCalendarTimeFrame(LastMonth)
-			m.chart = m.updateBarChart("days")
+			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
 		case "ctrl+q":
 			m.ctf = CurrQurater
 			m.cf = createCalendarTimeFrame(CurrQurater)
-			m.chart = m.updateBarChart("weeks")
+			m.chart, m.barData = updateBarChart(m.db, m.cf, "weeks")
 		case "ctrl+y":
 			m.ctf = CurrYear
 			m.cf = createCalendarTimeFrame(CurrYear)
-			m.chart = m.updateBarChart("months")
+			m.chart, m.barData = updateBarChart(m.db, m.cf, "months")
 		}
 	}
 	return m, cmd
@@ -330,7 +330,7 @@ func createDayGroupedBarData(groupedEntries []GroupedEntries, labelStyle string)
 
 func createBarChartModel(data []barchart.BarData) barchart.Model {
 	// TODO: Get a better way to determin the width of this thing
-	bc := barchart.New(termWidth-5, termHeight/2)
+	bc := barchart.New(termWidth/2, termHeight/2)
 	bc.PushAll(data)
 	bc.AutoMaxValue = true
 	bc.ShowAxis()

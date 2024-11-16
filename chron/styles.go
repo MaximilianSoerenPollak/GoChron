@@ -25,21 +25,20 @@ var paddingStyle = lipgloss.NewStyle().
 	PaddingLeft(2)
 
 var chartTopBorder = lipgloss.Border{
-		Top:          "=",
-		Bottom:       "─",
-		Left:         "│",
-		Right:        "⩨",
-		TopLeft:      "┌",
-		TopRight:     "┐",
-		BottomLeft:   "└",
-		BottomRight:  "┘",
-		MiddleLeft:   "├",
-		MiddleRight:  "┤",
-		Middle:       "┼",
-		MiddleTop:    "┬",
-		MiddleBottom: "┴",
-	}
-
+	Top:          "=",
+	Bottom:       "─",
+	Left:         "│",
+	Right:        "⩨",
+	TopLeft:      "┌",
+	TopRight:     "┐",
+	BottomLeft:   "└",
+	BottomRight:  "┘",
+	MiddleLeft:   "├",
+	MiddleRight:  "┤",
+	Middle:       "┼",
+	MiddleTop:    "┬",
+	MiddleBottom: "┴",
+}
 
 var centerAlignStyle = lipgloss.NewStyle().Align(lipgloss.Center)
 

@@ -310,7 +310,7 @@ func createDayGroupedBarData(groupedEntries []GroupedEntries, labelStyle string)
 			if err != nil {
 				fmt.Printf("Errored converting months: %s", err.Error())
 				os.Exit(1)
-			}	
+			}
 			labelStr = time.Month(m).String()
 		}
 		bd := barchart.BarData{

@@ -578,7 +578,6 @@ func (db *Database) GetHoursTrackerPerMonth(cf calendarTimeFrame) ([]GroupedEntr
 	return monthlyEntries, nil
 }
 
-
 // This gives you back all horus worked accumulated, grouped per month.
 func (db *Database) GetHoursTrackerPerWeek(cf calendarTimeFrame) ([]GroupedEntries, error) {
 	query := `SELECT strftime('%W', start) as date, SUM(hours) FROM entries `
@@ -613,8 +612,6 @@ func (db *Database) GetHoursTrackerPerWeek(cf calendarTimeFrame) ([]GroupedEntri
 	}
 	return weeklyEntries, nil
 }
-
-
 
 // Unsure if 'max' or 'sum' of hours even works as it's a 'string' type in the DB
 // TODO: Test

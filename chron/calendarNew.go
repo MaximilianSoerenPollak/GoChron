@@ -163,8 +163,8 @@ func createCalendarTimeFrame(ctf int) calendarTimeFrame {
 		until = now
 	}
 	return calendarTimeFrame{
-		since: since.Format(time.DateOnly),
-		until: until.Format(time.DateOnly),
+		since: since.Format("2006-01-02 15:03"),
+		until: until.Format("2006-01-02 15:03"),
 	}
 }
 
@@ -199,7 +199,7 @@ func initCalendarModel(dump io.Writer) calendarModel {
 	return cm
 }
 
-func updateBarChart(db *Database, cf calendarTimeFrame, grouping string) (barchart.Model,[]barchart.BarData) {
+func updateBarChart(db *Database, cf calendarTimeFrame, grouping string) (barchart.Model, []barchart.BarData) {
 	var queriedEntries []GroupedEntries
 	var err error
 	switch grouping {
@@ -254,11 +254,11 @@ func (m calendarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 
-		case "ctrl+1":
+		case "1":
 			m.ctf = CurrWeek
 			m.cf = createCalendarTimeFrame(CurrWeek)
 			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
-		case "ctrl+2":
+		case "2":
 			m.ctf = LastWeek
 			m.cf = createCalendarTimeFrame(LastWeek)
 			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
@@ -286,7 +286,7 @@ func (m calendarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m calendarModel) View() string {
 	dateStr := m.generateDateRangeStr()
 	mmaStr := m.generateMinMaxAvgStr()
-	keyMapStr := generateKeyMapStr(mmaStr, m.chart.Height())
+	keyMapStr := generateKeyMapStr(mmaStr, m.chart.Height(), m.ctf)
 	sepStr := strings.Repeat("=", lipgloss.Width(keyMapStr))
 	keyMapSepStr := lipgloss.JoinVertical(lipgloss.Center, lipgloss.NewStyle().Margin(1).Render(sepStr), keyMapStr)
 	mmaKmpStr := lipgloss.JoinVertical(lipgloss.Left, mmaStr, keyMapSepStr)
@@ -375,7 +375,7 @@ func (m calendarModel) generateDateRangeStr() string {
 }
 
 // Unsure where I should put these keymaps, for now they are hardcoded
-func generateKeyMapStr(minMaxStr string, tableHeight int) string {
+func generateKeyMapStr(minMaxStr string, tableHeight int, cft int) string {
 	rows := [][]string{
 		{" ctrl+1 ", " Current Week "},
 		{" ctrl+2 ", " Last Week "},
@@ -392,7 +392,11 @@ func generateKeyMapStr(minMaxStr string, tableHeight int) string {
 			if row == 0 {
 				return keyMapShortCutTableHeaderStyle
 			}
+			if row == cft+1 {
+				return keyMapShortCutTableHighlightStyle
+			}
 			return lipgloss.NewStyle()
+
 		},
 		).
 		BorderRow(true).

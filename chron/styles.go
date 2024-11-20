@@ -66,6 +66,7 @@ var selectedEntryStyle = lipgloss.NewStyle().
 	Bold(false)
 
 var keyMapShortCutTableHeaderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("20")).Background(lipgloss.Color("30"))
+var keyMapShortCutTableHighlightStyle = lipgloss.NewStyle().Background(lipgloss.Color("220")).Bold(true)
 
 var dateRangeBottomBorderStyle = lipgloss.NewStyle().
 	Border(lipgloss.NormalBorder(), true, true).Width(termWidth).AlignHorizontal(lipgloss.Center).Margin(1).Padding(1)

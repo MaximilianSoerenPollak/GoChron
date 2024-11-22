@@ -66,15 +66,20 @@ const (
 )
 
 type calendarModel struct {
-	chart   barchart.Model
-	barData []barchart.BarData
-	keys    help.KeyMap
-	debug   map[string]map[string]decimal.Decimal
-	entries []EntryDB
-	db      *Database
-	dump    io.Writer
-	cf      calendarTimeFrame
-	ctf     int //current time window
+	barChart barChartResult
+	keys     help.KeyMap
+	debug    map[string]map[string]decimal.Decimal
+	entries  []EntryDB
+	db       *Database
+	dump     io.Writer
+	cf       calendarTimeFrame
+	ctf      int //current time window
+	err      error
+}
+
+type barChartResult struct {
+	chart barchart.Model
+	data  []barchart.BarData
 }
 
 type calendarTimeFrame struct {
@@ -191,15 +196,15 @@ func initCalendarModel(dump io.Writer) calendarModel {
 		cf:      createDefaultCalendarTimeFrame(),
 	}
 
-	cm.ctf = CurrWeek
+	cm.ctf = CurrMonth
 	cm.cf = createDefaultCalendarTimeFrame()
 	// cm.cf = createCalendarTimeFrame(CurrWeek)
-	cm.chart, cm.barData = updateBarChart(database, cm.cf, "months")
-	cm.chart.Draw()
+	cm.barChart, cm.err = updateBarChart(database, cm.cf, "months")
+	cm.barChart.chart.Draw()
 	return cm
 }
 
-func updateBarChart(db *Database, cf calendarTimeFrame, grouping string) (barchart.Model, []barchart.BarData) {
+func updateBarChart(db *Database, cf calendarTimeFrame, grouping string) (barChartResult, error) {
 	var queriedEntries []GroupedEntries
 	var err error
 	switch grouping {
@@ -207,39 +212,34 @@ func updateBarChart(db *Database, cf calendarTimeFrame, grouping string) (barcha
 	case "weeks":
 		queriedEntries, err = db.GetHoursTrackerPerWeek(cf)
 		if err != nil {
-			fmt.Printf("Encountered an error while getting entries grouped by week. Error: %s", err.Error())
-			os.Exit(1)
+			errMsg := fmt.Errorf("Encountered an error while getting entries grouped by week. Error: %w", err)
+			return barChartResult{barchart.Model{}, nil}, errMsg
 		}
 	// Yearly view
 	case "months":
 		queriedEntries, err = db.GetHoursTrackerPerMonth(cf)
 		if err != nil {
-			fmt.Printf("Encountered an error while getting entries grouped by nth. Error: %s", err.Error())
-			os.Exit(1)
+			errMsg := fmt.Errorf("Encountered an error while getting entries grouped by month. Error: %w", err)
+			return barChartResult{barchart.Model{}, nil}, errMsg
 		}
-	// Norl / default view
-	case "days":
-		queriedEntries, err = db.GetHoursTrackedPerDay(cf)
-		if err != nil {
-			fmt.Printf("Encountered an error while getting entries grouped by day. Error: %s", err.Error())
-			os.Exit(1)
-		}
-	// Just as a failsave
 	default:
 		queriedEntries, err = db.GetHoursTrackedPerDay(cf)
 		if err != nil {
-			fmt.Printf("Encountered an error while getting entries grouped by day. Error: %s", err.Error())
-			os.Exit(1)
+			errMsg := fmt.Errorf("Encountered an error while getting entries grouped by day. Error: %w", err)
+			return barChartResult{barchart.Model{}, nil}, errMsg
 		}
 
 	}
 	if queriedEntries == nil {
 		// TODO: Need to make this into a new information box not like this.
-		fmt.Printf("error, no data for selected date range. Please select another date range")
-		os.Exit(1)
+		errMsg := fmt.Errorf("error, no data for selected date range. Please select another date range")
+		return barChartResult{barchart.Model{}, nil}, errMsg
 	}
 	data := createDayGroupedBarData(queriedEntries, grouping)
-	return createBarChartModel(data), data
+	return barChartResult{
+		chart: createBarChartModel(data),
+		data:  data,
+	}, nil
 
 }
 
@@ -257,42 +257,101 @@ func (m calendarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "1":
 			m.ctf = CurrWeek
 			m.cf = createCalendarTimeFrame(CurrWeek)
-			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
+			m.barChart, m.err = updateBarChart(m.db, m.cf, "days")
 		case "2":
 			m.ctf = LastWeek
 			m.cf = createCalendarTimeFrame(LastWeek)
-			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
+			m.barChart, m.err = updateBarChart(m.db, m.cf, "days")
 		case "ctrl+m":
 			m.ctf = CurrMonth
 			m.cf = createCalendarTimeFrame(CurrMonth)
-			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
+			m.barChart, m.err = updateBarChart(m.db, m.cf, "days")
 		case "ctrl+l":
 			m.ctf = LastMonth
 			m.cf = createCalendarTimeFrame(LastMonth)
-			m.chart, m.barData = updateBarChart(m.db, m.cf, "days")
+			m.barChart, m.err = updateBarChart(m.db, m.cf, "days")
 		case "ctrl+q":
 			m.ctf = CurrQurater
 			m.cf = createCalendarTimeFrame(CurrQurater)
-			m.chart, m.barData = updateBarChart(m.db, m.cf, "weeks")
+			m.barChart, m.err = updateBarChart(m.db, m.cf, "weeks")
 		case "ctrl+y":
 			m.ctf = CurrYear
 			m.cf = createCalendarTimeFrame(CurrYear)
-			m.chart, m.barData = updateBarChart(m.db, m.cf, "months")
+			m.barChart, m.err = updateBarChart(m.db, m.cf, "months")
 		}
 	}
 	return m, cmd
 }
 
+// func (m calendarModel) View() string {
+// 	dateStr := m.generateDateRangeStr()
+// 	minMaxStr := m.generateMinMaxAvgStr()
+// 	keyMapStr := generateKeyMapStr(minMaxStr, m.barChart.chart.Height(), m.ctf)
+// 	sepStr := strings.Repeat("=", lipgloss.Width(keyMapStr))
+// 	keyMapSepStr := lipgloss.JoinVertical(lipgloss.Center, lipgloss.NewStyle().Margin(1).Render(sepStr), keyMapStr)
+// 	minMaxKeyMapStr := lipgloss.JoinVertical(lipgloss.Left, minMaxStr, keyMapSepStr)
+// 	minMaxKeymapStrPadded := lipgloss.NewStyle().MarginLeft(2).Render(minMaxKeyMapStr)
+// 	if m.err != nil {
+// 		styleHeight, styleWidth := lipgloss.Size(minMaxKeymapStrPadded)
+// 		emptyStyle := lipgloss.NewStyle().Width(termWidth-styleWidth).Height(termHeight-styleHeight)
+// 		return placeOverlay(emptyStyle.Render(""), m.err.Error(), styleWidth, styleHeight, styleWidth)
+// 	}
+// 	barChartView := m.barChart.chart.View()
+// 	minMaxChartStr := lipgloss.JoinHorizontal(lipgloss.Top, barChartView, minMaxKeymapStrPadded)
+// 	finalStr := lipgloss.JoinVertical(lipgloss.Center, dateStr, minMaxChartStr)
+// 	return finalStr
+// }
+
 func (m calendarModel) View() string {
+	// Generate all the common layout elements
 	dateStr := m.generateDateRangeStr()
-	mmaStr := m.generateMinMaxAvgStr()
-	keyMapStr := generateKeyMapStr(mmaStr, m.chart.Height(), m.ctf)
+	minMaxStr := m.generateMinMaxAvgStr()
+	keyMapStr := generateKeyMapStr(minMaxStr, m.barChart.chart.Height(), m.ctf)
 	sepStr := strings.Repeat("=", lipgloss.Width(keyMapStr))
 	keyMapSepStr := lipgloss.JoinVertical(lipgloss.Center, lipgloss.NewStyle().Margin(1).Render(sepStr), keyMapStr)
-	mmaKmpStr := lipgloss.JoinVertical(lipgloss.Left, mmaStr, keyMapSepStr)
-	mmaKmpStrPad := lipgloss.NewStyle().MarginLeft(2).Render(mmaKmpStr)
-	mmaChart := lipgloss.JoinHorizontal(lipgloss.Top, m.chart.View(), mmaKmpStrPad)
-	return lipgloss.JoinVertical(lipgloss.Center, dateStr, mmaChart)
+	minMaxKeyMapStr := lipgloss.JoinVertical(lipgloss.Left, minMaxStr, keyMapSepStr)
+	minMaxKeymapStrPadded := lipgloss.NewStyle().MarginLeft(2).Render(minMaxKeyMapStr)
+
+	if m.err != nil {
+		// Create a more compact and elegant error box
+		chartHeight := m.barChart.chart.Height()
+		availableWidth := termWidth - lipgloss.Width(minMaxKeymapStrPadded) - 10
+		messageWidth := availableWidth / 3 // Make the error box smaller
+
+		// Simplified error box style
+		errorStyle := lipgloss.NewStyle().
+			BorderStyle(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("#FF7777")).
+			Padding(1, 2).
+			Width(messageWidth).
+			Align(lipgloss.Center).
+			Background(lipgloss.Color("#2A1215")).
+			Foreground(lipgloss.Color("#FF8888")).
+			Bold(true)
+
+		// Simple container just for height matching
+		containerStyle := lipgloss.NewStyle().
+			Width(availableWidth).
+			Height(chartHeight).
+			Align(lipgloss.Center)
+
+		// Render error message
+		errorMsg := "⚠️  " + m.err.Error()
+		errorBox := errorStyle.Render(errorMsg)
+
+		// Center in container
+		chartArea := containerStyle.Render(errorBox)
+
+		// Join with the rest of the layout
+		errorWithKeymap := lipgloss.JoinHorizontal(lipgloss.Top, chartArea, minMaxKeymapStrPadded)
+		return lipgloss.JoinVertical(lipgloss.Center, dateStr, errorWithKeymap)
+	}
+
+	// Normal rendering without error
+	barChartView := m.barChart.chart.View()
+	minMaxChartStr := lipgloss.JoinHorizontal(lipgloss.Top, barChartView, minMaxKeymapStrPadded)
+	finalStr := lipgloss.JoinVertical(lipgloss.Center, dateStr, minMaxChartStr)
+	return finalStr
 }
 
 func createDayGroupedBarData(groupedEntries []GroupedEntries, labelStyle string) []barchart.BarData {
@@ -346,8 +405,8 @@ func createBarChartModel(data []barchart.BarData) barchart.Model {
 //          ╰─────────────────────────────────────────────────────────╯
 
 func (m calendarModel) generateMinMaxAvgStr() string {
-	data := m.barData
-	maxValue := m.chart.MaxValue()
+	data := m.barChart.data
+	maxValue := m.barChart.chart.MaxValue()
 	var minValue float64
 	var total float64
 	for i, dp := range data {

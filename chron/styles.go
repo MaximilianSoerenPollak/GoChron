@@ -40,6 +40,7 @@ var chartTopBorder = lipgloss.Border{
 	MiddleBottom: "┴",
 }
 
+
 var centerAlignStyle = lipgloss.NewStyle().Align(lipgloss.Center)
 
 var barchartDefaultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).Align(lipgloss.Center)
@@ -50,6 +51,14 @@ var barchartDefaultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("3")).A
 //
 // Background(lipgloss.Color("#3d405b")).
 var baseStyle = lipgloss.NewStyle()
+
+var errorBoxStyle = lipgloss.NewStyle().
+        Foreground(lipgloss.Color("#FFFFFF")).
+        Background(lipgloss.Color("#FF2222")).
+        Padding(1, 2).
+        Width(50).
+        Align(lipgloss.Center)
+
 
 var tableHeaderStyle = lipgloss.NewStyle().
 	BorderForeground(lipgloss.Color("240")).
@@ -112,3 +121,11 @@ func calculateTotalStyleSize(styles ...lipgloss.Style) (int, int) {
 	}
 	return totalHeight, totalWidth
 }
+
+var overlayStyle = lipgloss.NewStyle().
+	Bold(true).
+	Foreground(lipgloss.Color("#FAFAFA")).
+	Background(lipgloss.Color("#7D56F4")).
+	PaddingTop(2).
+	PaddingLeft(4).
+	Width(22)
